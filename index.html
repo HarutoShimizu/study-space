@@ -398,12 +398,7 @@ let customPlaylists= JSON.parse(localStorage.getItem('study_space_custom_playlis
 let tasks = JSON.parse(localStorage.getItem('study_space_tasks')) || [];
 
 let player=null;
-let isPlayerReady=false;
 let titleCheckInterval=null;
-
-function onYouTubeIframeAPIReady() {
-  isPlayerReady = true;
-}
 
 // 🎛️ ダイヤル用の選択肢を「5分刻み」で自動生成する関数
 function initDialOptions() {
@@ -478,7 +473,7 @@ function renderCustom(){
   if(!customPlaylists.length){el.innerHTML='<div style="font-size:11px;color:var(--muted)">URLを追加してください</div>';return}
   el.innerHTML=customPlaylists.map((p,i)=>`
     <div class="playlist-item ${currentPlaying===i?'playing':''}" onclick="event.target.closest('.btn-delete') ? null : playPlaylist(${i})">
-      <div class="playlist-name">${p.name||'カスタムリンク'}</div>
+      <div class="playlist-name" id="playlist-name-${i}">${p.name||'カスタムリンク'}</div>
       ${currentPlaying===i?'<span class="playlist-badge" style="margin-right:4px">選択中</span>':''}
       <button class="btn-delete" onclick="deleteCustom(${i}); event.stopPropagation();" title="削除">
         <i class="ti ti-trash" aria-hidden="true"></i>
@@ -488,21 +483,15 @@ function renderCustom(){
 
 // URLからIDと種類(動画 or 再生リスト)を抽出
 function parseYouTubeUrl(url) {
-  // 再生リスト判定
   const listMatch = url.match(/[?&]list=([^&]+)/);
-  if (listMatch) {
-    return { type: 'playlist', id: listMatch[1] };
-  }
-  // 通常の動画判定 (watch?v=)
+  if (listMatch) return { type: 'playlist', id: listMatch[1] };
+  
   const videoMatch = url.match(/[?&]v=([^&]+)/);
-  if (videoMatch) {
-    return { type: 'video', id: videoMatch[1] };
-  }
-  // 短縮URL判定 (youtu.be/)
+  if (videoMatch) return { type: 'video', id: videoMatch[1] };
+  
   const shortMatch = url.match(/youtu\.be\/([^?&]+)/);
-  if (shortMatch) {
-    return { type: 'video', id: shortMatch[1] };
-  }
+  if (shortMatch) return { type: 'video', id: shortMatch[1] };
+  
   return null;
 }
 
@@ -518,7 +507,6 @@ function playPlaylist(idx){
   container.style.display='block';
   ph.style.display='none';
 
-  // destroyするとDOM要素も消えるため、毎回divを作り直す
   clearInterval(titleCheckInterval);
   if(player) { try { player.destroy(); } catch(e){} player = null; }
   container.innerHTML = '<div id="ytPlayer"></div>';
@@ -533,6 +521,7 @@ function playPlaylist(idx){
     playerVars.list = media.id;
   }
 
+  // プレイヤー生成を確実に行う
   player = new YT.Player('ytPlayer', {
     width: '100%',
     height: '100%',
@@ -556,14 +545,26 @@ function updateCurrentVideoTitle() {
   if (player && typeof player.getVideoData === 'function') {
     const videoData = player.getVideoData();
     if (videoData && videoData.title) {
-      document.getElementById('nowPlayingTitle').textContent = videoData.title;
+      const realTitle = videoData.title;
+      // 画面上部を本物のタイトルに更新
+      document.getElementById('nowPlayingTitle').textContent = realTitle;
+      
+      // リスト側の表示名が「お気に入り〜」の初期状態なら、本物のタイトルで保存し直す
+      if (currentPlaying !== null && customPlaylists[currentPlaying]) {
+        if (customPlaylists[currentPlaying].name.startsWith("お気に入り")) {
+          customPlaylists[currentPlaying].name = realTitle;
+          localStorage.setItem('study_space_custom_playlists', JSON.stringify(customPlaylists));
+          const nameEl = document.getElementById(`playlist-name-${currentPlaying}`);
+          if (nameEl) nameEl.textContent = realTitle;
+        }
+      }
     }
   }
 }
 
 function startTitleMonitor() {
   clearInterval(titleCheckInterval);
-  titleCheckInterval = setInterval(updateCurrentVideoTitle, 1000);
+  titleCheckInterval = setInterval(updateCurrentVideoTitle, 1500);
 }
 
 function addCustom(){
@@ -574,36 +575,15 @@ function addCustom(){
   const media = parseYouTubeUrl(v);
   if(!media) { alert('有効な動画IDまたは再生リストIDが見つかりません'); return; }
 
-  const addBtn = document.getElementById('addBtn');
-  addBtn.disabled = true;
-  addBtn.textContent = "取得..";
+  // フリーズの原因になるoEmbed通信をやめ、仮の名称で即時追加する安全な設計に変更
+  const typeLabel = media.type === 'playlist' ? 'リスト' : '動画';
+  const labelName = `お気に入り${typeLabel} ` + (customPlaylists.length + 1);
 
-  // oEmbedを用いて動画またはリストのタイトルを取得
-  let fetchUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(v)}&format=json`;
+  customPlaylists.push({url: v, name: labelName});
+  localStorage.setItem('study_space_custom_playlists', JSON.stringify(customPlaylists));
   
-  fetch(fetchUrl)
-    .then(res => res.json())
-    .then(data => {
-      let title = data.title || (media.type === 'playlist' ? 'カスタムリスト' : 'カスタム動画');
-      if(title.includes("YouTube") && title.length <= 8) { 
-        title = (media.type === 'playlist' ? 'お気に入りリスト ' : 'お気に入り動画 ') + (customPlaylists.length + 1); 
-      }
-      customPlaylists.push({url:v, name: title});
-      localStorage.setItem('study_space_custom_playlists', JSON.stringify(customPlaylists));
-      document.getElementById('urlInput').value='';
-      renderCustom();
-    })
-    .catch(err => {
-      let title = (media.type === 'playlist' ? 'お気に入りリスト ' : 'お気に入り動画 ') + (customPlaylists.length + 1);
-      customPlaylists.push({url:v, name: title});
-      localStorage.setItem('study_space_custom_playlists', JSON.stringify(customPlaylists));
-      document.getElementById('urlInput').value='';
-      renderCustom();
-    })
-    .finally(() => {
-      addBtn.disabled = false;
-      addBtn.textContent = "追加";
-    });
+  document.getElementById('urlInput').value='';
+  renderCustom();
 }
 
 function deleteCustom(idx) {
@@ -800,7 +780,7 @@ function addLog(label,sec){
 }
 
 // Init
-initDialOptions(); // 5分刻みダイヤル生成
+initDialOptions();
 updatePomoSettings();
 renderCustom();
 renderTasks();
