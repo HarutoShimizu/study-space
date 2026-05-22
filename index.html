@@ -518,12 +518,14 @@ function playPlaylist(idx){
   container.style.display='block';
   ph.style.display='none';
 
-  if(player) { player.destroy(); clearInterval(titleCheckInterval); }
+  // destroyするとDOM要素も消えるため、毎回divを作り直す
+  clearInterval(titleCheckInterval);
+  if(player) { try { player.destroy(); } catch(e){} player = null; }
+  container.innerHTML = '<div id="ytPlayer"></div>';
 
   let playerVars = {
     autoplay: 1,
     playsinline: 1,
-    host: 'https://www.youtube-nocookie.com'
   };
 
   if (media.type === 'playlist') {
@@ -538,9 +540,7 @@ function playPlaylist(idx){
     playerVars: playerVars,
     events: {
       'onReady': (event) => {
-        if(freeRunning || (pomoRunning && pomoPhase==='work')) {
-          event.target.playVideo();
-        }
+        event.target.playVideo();
         startTitleMonitor();
       },
       'onStateChange': (event) => {
