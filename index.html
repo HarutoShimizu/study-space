@@ -18,7 +18,7 @@
       min-height:100vh;padding:0;
       -webkit-tap-highlight-color: transparent;
     }
-    /* 右側パネルを360pxから450pxに広げてYouTube画面を大きく */
+    /* レイアウト構成：左パネルにタイマー、右パネルにYouTubeと各種設定 */
     .app{display:grid;grid-template-columns:1fr 450px;min-height:100vh;gap:0}
     
     @media (max-width: 950px) {
@@ -26,7 +26,7 @@
       .left { border-right: none !important; border-bottom: 1px solid var(--border); }
     }
 
-    .left{padding:2rem;border-right:1px solid var(--border)}
+    .left{padding:2rem;border-right:1px solid var(--border);display:flex;flex-direction:column;justify-content:flex-start}
     .right{padding:1.5rem;background:var(--surface)}
 
     /* Total time */
@@ -36,18 +36,15 @@
     .total-time span{color:var(--muted);font-size:2rem}
 
     /* Mode tabs */
-    .mode-tabs{display:flex;gap:8px;margin-bottom:1.5rem}
+    .mode-tabs{display:flex;gap:8px;margin-bottom:1rem}
     .tab{padding:6px 16px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Syne',sans-serif;font-size:13px;cursor:pointer;transition:all .2s}
     .tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
     .tab:hover:not(.active){border-color:var(--accent);color:var(--accent)}
 
     /* Main timer */
-    .timer-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2rem;margin-bottom:1.5rem;text-align:center}
+    .timer-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2.5rem 2rem;margin-bottom:1.5rem;text-align:center}
     .timer-phase{font-size:12px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:.75rem}
     .timer-display{font-family:'DM Mono',monospace;font-size:5rem;font-weight:400;letter-spacing:-.03em;line-height:1;margin-bottom:.5rem}
-    .timer-display.running{color:var(--accent)}
-    .timer-display.break{color:var(--accent2)}
-    .timer-display.paused{color:var(--warn)}
 
     /* Progress ring */
     .ring-wrap{position:relative;width:180px;height:180px;margin:0 auto 1.5rem}
@@ -92,16 +89,24 @@
     .playlist-sub{font-size:11px;color:var(--muted);margin-top:2px}
     .playlist-badge{font-size:10px;padding:2px 7px;border-radius:10px;background:rgba(78,205,196,.15);color:var(--accent2);border:1px solid rgba(78,205,196,.3);flex-shrink:0}
 
+    .btn-delete{background:transparent;border:none;color:var(--muted);cursor:pointer;padding:4px;border-radius:4px;display:flex;align-items:center;justify-content:center;transition:all .2s}
+    .btn-delete:hover{color:var(--danger);background:rgba(255,107,107,0.1)}
+
     /* Custom playlist input */
     .add-playlist{display:flex;gap:6px;margin-bottom:1.5rem}
     .add-playlist input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:12px;font-family:'Syne',sans-serif;outline:none}
     .add-playlist input:focus{border-color:var(--accent)}
     .add-playlist button{padding:8px 12px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-size:12px;cursor:pointer;font-family:'Syne',sans-serif;white-space:nowrap}
+    .add-playlist button:disabled{opacity:0.5;cursor:not-allowed}
 
     /* YouTube embed */
-    .yt-wrap{border-radius:10px;overflow:hidden;aspect-ratio:16/9;background:var(--surface2);border:1px solid var(--border);margin-bottom:1rem}
+    .yt-wrap{border-radius:10px;overflow:hidden;aspect-ratio:16/9;background:var(--surface2);border:1px solid var(--border);margin-bottom:0.75rem}
     .yt-wrap iframe{width:100%;height:100%;border:none}
     .yt-placeholder{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem;color:var(--muted);font-size:13px}
+
+    /* 現在の再生曲名タイトル表示エリア */
+    .now-playing-box{background:rgba(124,106,255,0.06);border:1px dashed var(--border);border-radius:8px;padding:10px 12px;margin-bottom:1.5rem;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text)}
+    .now-playing-title{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
 
     /* Today log */
     .log-list{display:flex;flex-direction:column;gap:6px}
@@ -128,11 +133,35 @@
     </div>
 
     <div class="mode-tabs">
-      <button class="tab active" onclick="setMode('free')">フリー</button>
-      <button class="tab" onclick="setMode('pomodoro')">ポモドーロ</button>
+      <button class="tab active" id="tabPomo" onclick="setMode('pomodoro')">ポモドーロ</button>
+      <button class="tab" id="tabFree" onclick="setMode('free')">フリー</button>
     </div>
 
-    <div id="freeMode" class="timer-card">
+    <div id="pomoMode" class="timer-card">
+      <div class="timer-phase" id="pomoPhaseLabel">作業セッション</div>
+      <div class="ring-wrap">
+        <svg width="180" height="180" viewBox="0 0 180 180">
+          <circle class="ring-bg" cx="90" cy="90" r="80"/>
+          <circle class="ring-fg" id="pomoRing" cx="90" cy="90" r="80" stroke-dasharray="502" stroke-dashoffset="0"/>
+        </svg>
+        <div class="ring-center">
+          <div class="ring-mins" id="pomoDisplay">25:00</div>
+          <div class="ring-label" id="pomoRingLabel">準備完了</div>
+        </div>
+      </div>
+      <div class="pomo-dots" id="pomoDots"></div>
+      <div class="controls">
+        <button class="btn-sec" onclick="resetPomo()" title="リセット"><i class="ti ti-refresh" aria-hidden="true"></i></button>
+        <button class="btn-main" id="pomoBtn" onclick="togglePomo()"><i class="ti ti-player-play" aria-hidden="true" id="pomoIcon"></i></button>
+        <button class="btn-sec" onclick="skipPomo()" title="スキップ"><i class="ti ti-player-skip-forward" aria-hidden="true"></i></button>
+      </div>
+      <div class="status-bar" style="justify-content:center">
+        <div class="status-dot" id="pomoStatusDot"></div>
+        <span id="pomoStatusText">スタートを押して開始</span>
+      </div>
+    </div>
+
+    <div id="freeMode" class="timer-card" style="display:none">
       <div class="timer-phase">集中タイマー</div>
       <div class="ring-wrap">
         <svg width="180" height="180" viewBox="0 0 180 180">
@@ -152,42 +181,6 @@
       <div class="status-bar" style="justify-content:center">
         <div class="status-dot" id="freeStatusDot"></div>
         <span id="freeStatusText">スタートを押して開始</span>
-      </div>
-    </div>
-
-    <div id="pomoMode" style="display:none">
-      <div class="timer-card">
-        <div class="timer-phase" id="pomoPhaseLabel">作業セッション</div>
-        <div class="ring-wrap">
-          <svg width="180" height="180" viewBox="0 0 180 180">
-            <circle class="ring-bg" cx="90" cy="90" r="80"/>
-            <circle class="ring-fg" id="pomoRing" cx="90" cy="90" r="80" stroke-dasharray="502" stroke-dashoffset="0"/>
-          </svg>
-          <div class="ring-center">
-            <div class="ring-mins" id="pomoDisplay">25:00</div>
-            <div class="ring-label" id="pomoRingLabel">準備完了</div>
-          </div>
-        </div>
-        <div class="pomo-dots" id="pomoDots"></div>
-        <div class="controls">
-          <button class="btn-sec" onclick="resetPomo()" title="リセット"><i class="ti ti-refresh" aria-hidden="true"></i></button>
-          <button class="btn-main" id="pomoBtn" onclick="togglePomo()"><i class="ti ti-player-play" aria-hidden="true" id="pomoIcon"></i></button>
-          <button class="btn-sec" onclick="skipPomo()" title="スキップ"><i class="ti ti-player-skip-forward" aria-hidden="true"></i></button>
-        </div>
-        <div class="status-bar" style="justify-content:center">
-          <div class="status-dot" id="pomoStatusDot"></div>
-          <span id="pomoStatusText">スタートを押して開始</span>
-        </div>
-      </div>
-
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:1rem">
-        <div class="section-title" style="border:none;margin-bottom:.75rem">設定</div>
-        <div class="pomo-settings">
-          <div class="setting-chip"><span>作業</span><input type="number" id="workMin" value="25" min="1" max="60" onchange="updatePomoSettings()"/>分</div>
-          <div class="setting-chip"><span>短休憩</span><input type="number" id="shortMin" value="5" min="1" max="30" onchange="updatePomoSettings()"/>分</div>
-          <div class="setting-chip"><span>長休憩</span><input type="number" id="longMin" value="15" min="1" max="60" onchange="updatePomoSettings()"/>分</div>
-          <div class="setting-chip"><span>セット数</span><input type="number" id="setCount" value="4" min="2" max="8" onchange="updatePomoSettings()"/>回</div>
-        </div>
       </div>
     </div>
 
@@ -212,13 +205,28 @@
       </div>
     </div>
 
-    <div class="section-title" style="margin-top:.5rem">プリセット</div>
+    <div class="now-playing-box">
+      <i class="ti ti-music-text" style="color:var(--accent)" aria-hidden="true"></i>
+      <span class="now-playing-title" id="nowPlayingTitle">選択されていません</span>
+    </div>
+
+    <div id="pomoSettingsWrapper" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:1.5rem">
+      <div class="section-title" style="border:none;margin-bottom:.75rem">ポモドーロタイマー設定</div>
+      <div class="pomo-settings">
+        <div class="setting-chip"><span>作業</span><input type="number" id="workMin" value="25" min="1" max="60" onchange="updatePomoSettings()"/>分</div>
+        <div class="setting-chip"><span>短休憩</span><input type="number" id="shortMin" value="5" min="1" max="30" onchange="updatePomoSettings()"/>分</div>
+        <div class="setting-chip"><span>長休憩</span><input type="number" id="longMin" value="15" min="1" max="60" onchange="updatePomoSettings()"/>分</div>
+        <div class="setting-chip"><span>セット数</span><input type="number" id="setCount" value="4" min="2" max="8" onchange="updatePomoSettings()"/>回</div>
+      </div>
+    </div>
+
+    <div class="section-title">プリセット</div>
     <div class="playlist-list" id="presetList"></div>
 
     <div class="section-title">URLを追加</div>
     <div class="add-playlist">
       <input type="text" id="urlInput" placeholder="YouTube プレイリスト URL" />
-      <button onclick="addCustom()">追加</button>
+      <button onclick="addCustom()" id="addBtn">追加</button>
     </div>
 
     <div class="section-title" style="margin-top:.25rem">カスタム</div>
@@ -238,11 +246,10 @@ const PRESETS=[
 ];
 
 let currentPlaying=null;
-let customPlaylists=[];
-let player=null; // YouTubeプレーヤーオブジェクト
+let customPlaylists= JSON.parse(localStorage.getItem('study_space_custom_playlists')) || [];
+let player=null;
 let isPlayerReady=false;
 
-// YouTube APIの準備ができたら呼ばれる関数
 function onYouTubeIframeAPIReady() {
   isPlayerReady = true;
 }
@@ -264,13 +271,16 @@ function renderCustom(){
   const el=document.getElementById('customList');
   if(!customPlaylists.length){el.innerHTML='<div style="font-size:12px;color:var(--muted)">URLを追加してください</div>';return}
   el.innerHTML=customPlaylists.map((p,i)=>`
-    <div class="playlist-item ${currentPlaying==='c'+i?'playing':''}" onclick="playPlaylist(${i},'custom')">
+    <div class="playlist-item ${currentPlaying==='c'+i?'playing':''}" onclick="event.target.closest('.btn-delete') ? null : playPlaylist(${i},'custom')">
       <div class="playlist-thumb-ph">🔗</div>
       <div class="playlist-info">
         <div class="playlist-name">${p.name||'カスタムリスト'}</div>
-        <div class="playlist-sub">${p.url.slice(0,40)}...</div>
+        <div class="playlist-sub">ユーザー追加のリスト</div>
       </div>
-      ${currentPlaying==='c'+i?'<span class="playlist-badge">再生中</span>':''}
+      ${currentPlaying==='c'+i?'<span class="playlist-badge" style="margin-right:8px">再生中</span>':''}
+      <button class="btn-delete" onclick="deleteCustom(${i}); event.stopPropagation();" title="削除">
+        <i class="ti ti-trash" aria-hidden="true"></i>
+      </button>
     </div>`).join('');
 }
 
@@ -281,24 +291,30 @@ function extractPlaylistId(url){
 
 function playPlaylist(idx,type){
   let id;
-  if(type==='preset'){id=PRESETS[idx].id;currentPlaying=idx;}
+  let title = "";
+  if(type==='preset'){
+    id=PRESETS[idx].id;
+    currentPlaying=idx;
+    title = PRESETS[idx].name;
+  }
   else{
     const pid=extractPlaylistId(customPlaylists[idx].url);
     if(!pid){alert('有効なプレイリストURLを入力してください');return}
-    id=pid;currentPlaying='c'+idx;
+    id=pid;
+    currentPlaying='c'+idx;
+    title = customPlaylists[idx].name;
   }
+
+  // 下部のタイトル表示を更新
+  document.getElementById('nowPlayingTitle').textContent = title;
 
   const container=document.getElementById('ytPlayerContainer');
   const ph=document.getElementById('ytPlaceholder');
   container.style.display='block';
   ph.style.display='none';
 
-  // 既存のプレーヤーがあれば破棄して新しく作る
-  if(player) {
-    player.destroy();
-  }
+  if(player) { player.destroy(); }
 
-  // APIを使用して、ノープレッシャーかつ制御可能なiframeを生成
   player = new YT.Player('ytPlayer', {
     width: '100%',
     height: '100%',
@@ -307,11 +323,10 @@ function playPlaylist(idx,type){
       list: id,
       autoplay: 1,
       playsinline: 1,
-      host: 'https://www.youtube-nocookie.com' // セキュリティ制限回避
+      host: 'https://www.youtube-nocookie.com'
     },
     events: {
       'onReady': (event) => {
-        // タイマーがすでに動いている状態なら、プレイリスト切り替え時にも自動再生
         if(freeRunning || (pomoRunning && pomoPhase==='work')) {
           event.target.playVideo();
         }
@@ -322,35 +337,75 @@ function playPlaylist(idx,type){
   renderPresets();renderCustom();
 }
 
+// 貼られたURLから再生リストの本当のタイトルを自動取得して追加する関数
 function addCustom(){
   const v=document.getElementById('urlInput').value.trim();
   if(!v)return;
   if(!v.includes('youtube.com')&&!v.includes('youtu.be')){alert('YouTube URLを入力してください');return}
-  customPlaylists.push({url:v,name:'カスタムリスト '+(customPlaylists.length+1)});
-  document.getElementById('urlInput').value='';
+  
+  const playlistId = extractPlaylistId(v);
+  if(!playlistId) { alert('有効なプレイリストIDが見つかりません'); return; }
+
+  const addBtn = document.getElementById('addBtn');
+  addBtn.disabled = true;
+  addBtn.textContent = "取得中...";
+
+  // YouTubeの埋め込み用oEmbed APIを使ってタイトルを取得（鍵不要のハック）
+  const fetchUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/playlist?list=${playlistId}&format=json`;
+  
+  fetch(fetchUrl)
+    .then(res => res.json())
+    .then(data => {
+      let title = data.title || 'カスタムリスト';
+      // もしタイトルが正常に取れなかった場合
+      if(title.includes("YouTube") && title.length <= 8) { title = 'カスタムリスト ' + (customPlaylists.length + 1); }
+      
+      customPlaylists.push({url:v, name: title});
+      localStorage.setItem('study_space_custom_playlists', JSON.stringify(customPlaylists));
+      document.getElementById('urlInput').value='';
+      renderCustom();
+    })
+    .catch(err => {
+      // 制限などでエラーになった場合のセーフティバックアップ
+      customPlaylists.push({url:v, name: 'カスタムリスト ' + (customPlaylists.length + 1)});
+      localStorage.setItem('study_space_custom_playlists', JSON.stringify(customPlaylists));
+      document.getElementById('urlInput').value='';
+      renderCustom();
+    })
+    .finally(() => {
+      addBtn.disabled = false;
+      addBtn.textContent = "追加";
+    });
+}
+
+function deleteCustom(idx) {
+  if(currentPlaying === 'c'+idx) {
+    if(player) player.destroy();
+    document.getElementById('ytPlayerContainer').style.display='none';
+    document.getElementById('ytPlaceholder').style.display='flex';
+    document.getElementById('nowPlayingTitle').textContent = "選択されていません";
+    currentPlaying = null;
+  }
+  customPlaylists.splice(idx, 1);
+  localStorage.setItem('study_space_custom_playlists', JSON.stringify(customPlaylists));
+  renderPresets();
   renderCustom();
 }
 
-// 外部からYouTubeの再生・停止を操作するヘルパー関数
 function syncYouTube(action) {
   if (!player || typeof player.playVideo !== 'function') return;
   try {
-    if (action === 'play') {
-      player.playVideo();
-    } else if (action === 'pause') {
-      player.pauseVideo();
-    }
-  } catch(e) {
-    console.log("YouTube control handling error:", e);
-  }
+    if (action === 'play') { player.playVideo(); } 
+    else if (action === 'pause') { player.pauseVideo(); }
+  } catch(e) { console.log(e); }
 }
 
 /* Timer state */
-let mode='free';
+let mode='pomodoro'; // 初期状態をポモドーロに
 let freeRunning=false,freeSec=0,freeInterval=null;
 let pomoRunning=false;
 let pomoSec=0,pomoInterval=null;
-let pomoPhase='work'; // work | short | long
+let pomoPhase='work'; 
 let pomoSet=0;
 let workSec=25*60,shortSec=5*60,longSec=15*60,totalSets=4;
 let totalStudySec=0,totalInterval=null;
@@ -358,9 +413,14 @@ let logs=[];
 
 function setMode(m){
   mode=m;
-  document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.toggle('active',[m==='free',m==='pomodoro'][i])});
+  document.getElementById('tabPomo').classList.toggle('active', m==='pomodoro');
+  document.getElementById('tabFree').classList.toggle('active', m==='free');
+  
   document.getElementById('freeMode').style.display=m==='free'?'block':'none';
   document.getElementById('pomoMode').style.display=m==='pomodoro'?'block':'none';
+  
+  // モードを切り替えたら右側の設定エリアの見え方も調整（ポモドーロ設定はポモドーロ選択時のみ意味があるため）
+  document.getElementById('pomoSettingsWrapper').style.opacity = m==='pomodoro'?'1':'0.4';
 }
 
 function fmt(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
@@ -379,7 +439,7 @@ function toggleFree(){
     document.getElementById('freeModeLabel').textContent='計測中';
     freeInterval=setInterval(()=>{freeSec++;updateFreeUI()},1000);
     startTotal();
-    syncYouTube('play'); // YouTube 同時再生
+    syncYouTube('play');
   } else {
     freeRunning=false;
     clearInterval(freeInterval);
@@ -388,7 +448,7 @@ function toggleFree(){
     document.getElementById('freeStatusText').textContent='一時停止中';
     document.getElementById('freeModeLabel').textContent='一時停止';
     stopTotal();
-    syncYouTube('pause'); // YouTube 同時停止
+    syncYouTube('pause');
   }
 }
 function updateFreeUI(){
@@ -406,7 +466,7 @@ function resetFree(){
   document.getElementById('freeModeLabel').textContent='待機中';
   document.getElementById('freeIcon').className='ti ti-player-play';
   document.getElementById('freeRing').style.strokeDashoffset='0';
-  syncYouTube('pause'); // リセット時も停止
+  syncYouTube('pause');
 }
 function lapFree(){if(!freeRunning||freeSec===0)return;addLog('ラップ',freeSec)}
 
@@ -434,9 +494,9 @@ function togglePomo(){
     
     if(pomoPhase==='work') {
       startTotal();
-      syncYouTube('play'); // 作業セッション開始時にYouTube再生
+      syncYouTube('play');
     } else {
-      syncYouTube('pause'); // 休憩時間の開始時はYouTubeを止める（お好みで変更可）
+      syncYouTube('pause');
     }
   } else {
     pomoRunning=false;clearInterval(pomoInterval);
@@ -444,7 +504,7 @@ function togglePomo(){
     document.getElementById('pomoStatusDot').className='status-dot paused';
     document.getElementById('pomoStatusText').textContent='一時停止中';
     stopTotal();
-    syncYouTube('pause'); // 一時停止時にYouTube停止
+    syncYouTube('pause');
   }
 }
 function pomoTick(){
@@ -454,7 +514,7 @@ function pomoTick(){
 }
 function nextPomoPhase(){
   clearInterval(pomoInterval);pomoRunning=false;
-  syncYouTube('pause'); // フェーズ切り替え時は一旦YouTubeを停止
+  syncYouTube('pause');
   
   if(pomoPhase==='work'){
     addLog('ポモドーロ #'+(pomoSet+1),workSec);
@@ -465,7 +525,6 @@ function nextPomoPhase(){
   } else {
     if(pomoPhase==='long'){pomoSet=0;}
     pomoPhase='work';pomoSec=workSec;
-    // 次の作業自動スタートはさせず、ユーザーが「スタート」を押すのを待つ
   }
   renderDots();updatePomoUI();
   document.getElementById('pomoIcon').className='ti ti-player-play';
@@ -509,6 +568,7 @@ function addLog(label,sec){
 updatePomoSettings();
 renderPresets();renderCustom();
 pomoSec=workSec;updatePomoUI();
+setMode('pomodoro'); // 初期起動モードをポモドーロに確定
 </script>
 </body>
 </html>
