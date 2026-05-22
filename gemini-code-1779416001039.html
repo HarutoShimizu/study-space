@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Study Space - Premium Timer</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;700&display=swap');
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#0d0d0f;--surface:#16161a;--surface2:#1e1e24;--border:#2a2a32;
+      --accent:#7c6aff;--accent2:#4ecdc4;--text:#e8e8f0;--muted:#6b6b7e;
+      --danger:#ff6b6b;--success:#4ecdc4;--warn:#ffd166;
+    }
+    body{
+      background:var(--bg);
+      color:var(--text);
+      font-family:'Syne',sans-serif;
+      min-height:100vh;
+      padding:0;
+      -webkit-tap-highlight-color: transparent; /* iPadのタップ時のハイライトを無効化 */
+    }
+    .app{display:grid;grid-template-columns:1fr 360px;min-height:100vh;gap:0}
+    
+    /* iPadの縦画面など、画面幅が狭いときは1カラムにする */
+    @media (max-width: 850px) {
+      .app { grid-template-columns: 1fr; }
+      .left { border-right: none !important; border-bottom: 1px solid var(--border); }
+    }
+
+    .left{padding:2rem;border-right:1px solid var(--border)}
+    .right{padding:1.5rem;background:var(--surface)}
+
+    /* Total time */
+    .total-block{margin-bottom:2rem}
+    .total-label{font-size:12px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:.4rem}
+    .total-time{font-family:'DM Mono',monospace;font-size:3.5rem;font-weight:400;color:var(--text);line-height:1;letter-spacing:-.02em}
+    .total-time span{color:var(--muted);font-size:2rem}
+
+    /* Mode tabs */
+    .mode-tabs{display:flex;gap:8px;margin-bottom:1.5rem}
+    .tab{padding:6px 16px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Syne',sans-serif;font-size:13px;cursor:pointer;transition:all .2s}
+    .tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+    .tab:hover:not(.active){border-color:var(--accent);color:var(--accent)}
+
+    /* Main timer */
+    .timer-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2rem;margin-bottom:1.5rem;text-align:center}
+    .timer-phase{font-size:12px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:.75rem}
+    .timer-display{font-family:'DM Mono',monospace;font-size:5rem;font-weight:400;letter-spacing:-.03em;line-height:1;margin-bottom:.5rem}
+    .timer-display.running{color:var(--accent)}
+    .timer-display.break{color:var(--accent2)}
+    .timer-display.paused{color:var(--warn)}
+
+    /* Progress ring */
+    .ring-wrap{position:relative;width:180px;height:180px;margin:0 auto 1.5rem}
+    .ring-wrap svg{transform:rotate(-90deg)}
+    .ring-bg{fill:none;stroke:var(--border);stroke-width:6}
+    .ring-fg{fill:none;stroke:var(--accent);stroke-width:6;stroke-linecap:round;transition:stroke-dashoffset .5s ease,stroke .3s}
+    .ring-fg.free-active { stroke: var(--accent2); } /* フリーモード時の一時的なカラー */
+    .ring-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;width: 80%;}
+    .ring-mins{font-family:'DM Mono',monospace;font-size:2.2rem;font-weight:400;line-height:1}
+    .ring-label{font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-top:4px}
+
+    /* Controls */
+    .controls{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:1rem}
+    .btn-main{width:56px;height:56px;border-radius:50%;border:none;background:var(--accent);color:#fff;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s,opacity .2s}
+    .btn-main:hover{opacity:.85}
+    .btn-main:active{transform:scale(.93)}
+    .btn-sec{width:40px;height:40px;border-radius:50%;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
+    .btn-sec:hover{border-color:var(--text);color:var(--text)}
+
+    /* Pomodoro count */
+    .pomo-dots{display:flex;gap:6px;justify-content:center;margin-bottom:1rem}
+    .dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:background .3s}
+    .dot.done{background:var(--accent)}
+    .dot.current{background:var(--warn)}
+
+    /* Settings row */
+    .pomo-settings{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:.5rem}
+    .setting-chip{display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:12px;color:var(--muted)}
+    .setting-chip input[type=number]{width:36px;background:transparent;border:none;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;font-weight:500;text-align:center;outline:none}
+    .setting-chip input[type=number]::-webkit-inner-spin-button{display:none}
+
+    /* Right panel */
+    .section-title{font-size:11px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:.75rem;padding-bottom:.4rem;border-bottom:1px solid var(--border)}
+
+    /* Playlist selector */
+    .playlist-list{display:flex;flex-direction:column;gap:8px;margin-bottom:1.5rem}
+    .playlist-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+    .playlist-item:hover{border-color:var(--accent);background:rgba(124,106,255,.08)}
+    .playlist-item.playing{border-color:var(--accent2);background:rgba(78,205,196,.08)}
+    .playlist-thumb-ph{width:44px;height:32px;border-radius:6px;background:var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px}
+    .playlist-info{flex:1;min-width:0}
+    .playlist-name{font-size:13px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .playlist-sub{font-size:11px;color:var(--muted);margin-top:2px}
+    .playlist-badge{font-size:10px;padding:2px 7px;border-radius:10px;background:rgba(78,205,196,.15);color:var(--accent2);border:1px solid rgba(78,205,196,.3);flex-shrink:0}
+
+    /* Custom playlist input */
+    .add-playlist{display:flex;gap:6px;margin-bottom:1.5rem}
+    .add-playlist input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:12px;font-family:'Syne',sans-serif;outline:none}
+    .add-playlist input:focus{border-color:var(--accent)}
+    .add-playlist button{padding:8px 12px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-size:12px;cursor:pointer;font-family:'Syne',sans-serif;white-space:nowrap}
+
+    /* YouTube embed */
+    .yt-wrap{border-radius:10px;overflow:hidden;aspect-ratio:16/9;background:var(--surface2);border:1px solid var(--border);margin-bottom:1rem}
+    .yt-wrap iframe{width:100%;height:100%;border:none}
+    .yt-placeholder{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem;color:var(--muted);font-size:13px}
+
+    /* Today log */
+    .log-list{display:flex;flex-direction:column;gap:6px}
+    .log-item{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);padding:4px 0;border-bottom:1px solid var(--border)}
+    .log-item:last-child{border-bottom:none}
+    .log-time{font-family:'DM Mono',monospace;color:var(--accent);font-size:11px}
+
+    .status-bar{display:flex;align-items:center;gap:8px;margin-bottom:1rem;font-size:12px;color:var(--muted)}
+    .status-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0}
+    .status-dot.running{background:var(--success);box-shadow:0 0 0 3px rgba(78,205,196,.2)}
+    .status-dot.paused{background:var(--warn)}
+  </style>
+</head>
+<body>
+
+<h2 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">勉強タイマーアプリ：ポモドーロタイマー・総学習時間・YouTubeBGM</h2>
+
+<div class="app">
+  <div class="left">
+    <div class="total-block">
+      <div class="total-label">今日の学習時間</div>
+      <div class="total-time" id="totalDisplay">00<span>h</span> 00<span>m</span> 00<span>s</span></div>
+    </div>
+
+    <div class="mode-tabs">
+      <button class="tab active" onclick="setMode('free')">フリー</button>
+      <button class="tab" onclick="setMode('pomodoro')">ポモドーロ</button>
+    </div>
+
+    <div id="freeMode" class="timer-card">
+      <div class="timer-phase">集中タイマー</div>
+      <div class="ring-wrap">
+        <svg width="180" height="180" viewBox="0 0 180 180">
+          <circle class="ring-bg" cx="90" cy="90" r="80"/>
+          <circle class="ring-fg free-active" id="freeRing" cx="90" cy="90" r="80" stroke-dasharray="502" stroke-dashoffset="0"/>
+        </svg>
+        <div class="ring-center">
+          <div class="ring-mins" id="freeDisplay">00:00</div>
+          <div class="ring-label" id="freeModeLabel">待機中</div>
+        </div>
+      </div>
+      <div class="controls">
+        <button class="btn-sec" onclick="resetFree()" title="リセット"><i class="ti ti-refresh" aria-hidden="true"></i></button>
+        <button class="btn-main" id="freeBtn" onclick="toggleFree()"><i class="ti ti-player-play" aria-hidden="true" id="freeIcon"></i></button>
+        <button class="btn-sec" onclick="lapFree()" title="ラップ"><i class="ti ti-flag" aria-hidden="true"></i></button>
+      </div>
+      <div class="status-bar" style="justify-content:center">
+        <div class="status-dot" id="freeStatusDot"></div>
+        <span id="freeStatusText">スタートを押して開始</span>
+      </div>
+    </div>
+
+    <div id="pomoMode" style="display:none">
+      <div class="timer-card">
+        <div class="timer-phase" id="pomoPhaseLabel">作業セッション</div>
+        <div class="ring-wrap">
+          <svg width="180" height="180" viewBox="0 0 180 180">
+            <circle class="ring-bg" cx="90" cy="90" r="80"/>
+            <circle class="ring-fg" id="pomoRing" cx="90" cy="90" r="80" stroke-dasharray="502" stroke-dashoffset="0"/>
+          </svg>
+          <div class="ring-center">
+            <div class="ring-mins" id="pomoDisplay">25:00</div>
+            <div class="ring-label" id="pomoRingLabel">準備完了</div>
+          </div>
+        </div>
+        <div class="pomo-dots" id="pomoDots"></div>
+        <div class="controls">
+          <button class="btn-sec" onclick="resetPomo()" title="リセット"><i class="ti ti-refresh" aria-hidden="true"></i></button>
+          <button class="btn-main" id="pomoBtn" onclick="togglePomo()"><i class="ti ti-player-play" aria-hidden="true" id="pomoIcon"></i></button>
+          <button class="btn-sec" onclick="skipPomo()" title="スキップ"><i class="ti ti-player-skip-forward" aria-hidden="true"></i></button>
+        </div>
+        <div class="status-bar" style="justify-content:center">
+          <div class="status-dot" id="pomoStatusDot"></div>
+          <span id="pomoStatusText">スタートを押して開始</span>
+        </div>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:1rem">
+        <div class="section-title" style="border:none;margin-bottom:.75rem">設定</div>
+        <div class="pomo-settings">
+          <div class="setting-chip"><span>作業</span><input type="number" id="workMin" value="25" min="1" max="60" onchange="updatePomoSettings()"/>分</div>
+          <div class="setting-chip"><span>短休憩</span><input type="number" id="shortMin" value="5" min="1" max="30" onchange="updatePomoSettings()"/>分</div>
+          <div class="setting-chip"><span>長休憩</span><input type="number" id="longMin" value="15" min="1" max="60" onchange="updatePomoSettings()"/>分</div>
+          <div class="setting-chip"><span>セット数</span><input type="number" id="setCount" value="4" min="2" max="8" onchange="updatePomoSettings()"/>回</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem">
+      <div class="section-title">セッション記録</div>
+      <div class="log-list" id="logList">
+        <div style="font-size:12px;color:var(--muted);">まだ記録がありません</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="right">
+    <div class="section-title">BGM / 作業音楽</div>
+
+    <div class="yt-wrap" id="ytWrap">
+      <div class="yt-placeholder" id="ytPlaceholder">
+        <i class="ti ti-music" style="font-size:32px;color:var(--border)" aria-hidden="true"></i>
+        <span>プレイリストを選択してください</span>
+      </div>
+      <div id="ytFrame" style="display:none;width:100%;height:100%"></div>
+    </div>
+
+    <div class="section-title" style="margin-top:.5rem">プリセット</div>
+    <div class="playlist-list" id="presetList"></div>
+
+    <div class="section-title">URLを追加</div>
+    <div class="add-playlist">
+      <input type="text" id="urlInput" placeholder="YouTube プレイリスト URL" />
+      <button onclick="addCustom()">追加</button>
+    </div>
+
+    <div class="section-title" style="margin-top:.25rem">カスタム</div>
+    <div class="playlist-list" id="customList">
+      <div style="font-size:12px;color:var(--muted)">URLを追加してください</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const PRESETS=[
+  {name:"Lo-fi Hip Hop 🎵",sub:"勉強・作業用",emoji:"🎵",id:"PLFgquLnL59alCl_2TQvOiD5Vgm1hCaGSI",type:"playlist"},
+  {name:"Jazz Café ☕",sub:"集中・リラックス",emoji:"☕",id:"PLB7ZcpBnoD2JcIEP29vViOhfwBcASzZnQ",type:"playlist"},
+  {name:"白ノイズ / ホワイトノイズ",sub:"集中・環境音",emoji:"🌊",id:"PLOX1H4YbgLFbvv2oFKH_B_RkAbCgAMZdT",type:"playlist"},
+  {name:"Piano Study Music 🎹",sub:"クラシック・ピアノ",emoji:"🎹",id:"PLmIFBIWLmjLKdlVRBMfFzFkpRzMj_VWPl",type:"playlist"},
+  {name:"雨音 / 自然音",sub:"リラックス・睡眠",emoji:"🌧",id:"PLMIbmfP_9vb8BCxRoraJpgg4J8qqfmSB9",type:"playlist"},
+];
+
+let currentPlaying=null;
+let customPlaylists=[];
+
+function renderPresets(){
+  const el=document.getElementById('presetList');
+  el.innerHTML=PRESETS.map((p,i)=>`
+    <div class="playlist-item ${currentPlaying===i?'playing':''}" onclick="playPlaylist(${i},'preset')" id="pi_${i}">
+      <div class="playlist-thumb-ph">${p.emoji}</div>
+      <div class="playlist-info">
+        <div class="playlist-name">${p.name}</div>
+        <div class="playlist-sub">${p.sub}</div>
+      </div>
+      ${currentPlaying===i?'<span class="playlist-badge">再生中</span>':''}
+    </div>`).join('');
+}
+
+function renderCustom(){
+  const el=document.getElementById('customList');
+  if(!customPlaylists.length){el.innerHTML='<div style="font-size:12px;color:var(--muted)">URLを追加してください</div>';return}
+  el.innerHTML=customPlaylists.map((p,i)=>`
+    <div class="playlist-item ${currentPlaying==='c'+i?'playing':''}" onclick="playPlaylist(${i},'custom')">
+      <div class="playlist-thumb-ph">🔗</div>
+      <div class="playlist-info">
+        <div class="playlist-name">${p.name||'カスタムリスト'}</div>
+        <div class="playlist-sub">${p.url.slice(0,40)}...</div>
+      </div>
+      ${currentPlaying==='c'+i?'<span class="playlist-badge">再生中</span>':''}
+    </div>`).join('');
+}
+
+function extractPlaylistId(url){
+  const m=url.match(/[?&]list=([^&]+)/);
+  return m?m[1]:null;
+}
+
+function playPlaylist(idx,type){
+  let id;
+  if(type==='preset'){id=PRESETS[idx].id;currentPlaying=idx;}
+  else{
+    const pid=extractPlaylistId(customPlaylists[idx].url);
+    if(!pid){alert('有効なプレイリストURLを入力してください');return}
+    id=pid;currentPlaying='c'+idx;
+  }
+  const frame=document.getElementById('ytFrame');
+  const ph=document.getElementById('ytPlaceholder');
+  // iPad等モバイルブラウザ向けに、mute=1(消音)およびplaysinline=1を追加して自動再生を強化
+  frame.innerHTML=`<iframe width="100%" height="100%" src="https://www.youtube.com/embed/videoseries?list=${id}&autoplay=1&mute=1&playsinline=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+  frame.style.display='block';
+  ph.style.display='none';
+  renderPresets();renderCustom();
+}
+
+function addCustom(){
+  const v=document.getElementById('urlInput').value.trim();
+  if(!v)return;
+  if(!v.includes('youtube.com')&&!v.includes('youtu.be')){alert('YouTube URLを入力してください');return}
+  customPlaylists.push({url:v,name:'カスタムリスト '+(customPlaylists.length+1)});
+  document.getElementById('urlInput').value='';
+  renderCustom();
+}
+
+/* Timer state */
+let mode='free';
+let freeRunning=false,freeSec=0,freeInterval=null;
+let pomoRunning=false;
+let pomoSec=0,pomoInterval=null;
+let pomoPhase='work'; // work | short | long
+let pomoSet=0;
+let workSec=25*60,shortSec=5*60,longSec=15*60,totalSets=4;
+let totalStudySec=0,totalInterval=null;
+let logs=[];
+
+function setMode(m){
+  mode=m;
+  document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.toggle('active',[m==='free',m==='pomodoro'][i])});
+  document.getElementById('freeMode').style.display=m==='free'?'block':'none';
+  document.getElementById('pomoMode').style.display=m==='pomodoro'?'block':'none';
+}
+
+function fmt(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+function fmtTotal(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),ss=s%60;return`${String(h).padStart(2,'0')}<span>h</span> ${String(m).padStart(2,'0')}<span>m</span> ${String(ss).padStart(2,'0')}<span>s</span>`}
+
+function startTotal(){if(!totalInterval)totalInterval=setInterval(()=>{totalStudySec++;document.getElementById('totalDisplay').innerHTML=fmtTotal(totalStudySec)},1000)}
+function stopTotal(){if(!freeRunning&&!pomoRunning){clearInterval(totalInterval);totalInterval=null}}
+
+/* FREE MODE */
+function toggleFree(){
+  if(!freeRunning){
+    freeRunning=true;
+    document.getElementById('freeIcon').className='ti ti-player-pause';
+    document.getElementById('freeStatusDot').className='status-dot running';
+    document.getElementById('freeStatusText').textContent='学習中...';
+    document.getElementById('freeModeLabel').textContent='計測中';
+    freeInterval=setInterval(()=>{freeSec++;updateFreeUI()},1000);
+    startTotal();
+  } else {
+    freeRunning=false;
+    clearInterval(freeInterval);
+    document.getElementById('freeIcon').className='ti ti-player-play';
+    document.getElementById('freeStatusDot').className='status-dot paused';
+    document.getElementById('freeStatusText').textContent='一時停止中';
+    document.getElementById('freeModeLabel').textContent='一時停止';
+    stopTotal();
+  }
+}
+function updateFreeUI(){
+  document.getElementById('freeDisplay').textContent=fmt(freeSec);
+  // フリーモードの進捗リング（1時間=3600秒で1周する演出例。お好みで変更可能）
+  const pct = (freeSec % 3600) / 3600;
+  document.getElementById('freeRing').style.strokeDashoffset = 502 * pct;
+}
+function resetFree(){
+  if(freeRunning)toggleFree();
+  if(freeSec>0){addLog('フリー学習',freeSec)}
+  freeSec=0;
+  document.getElementById('freeDisplay').textContent='00:00';
+  document.getElementById('freeStatusDot').className='status-dot';
+  document.getElementById('freeStatusText').textContent='スタートを押して開始';
+  document.getElementById('freeModeLabel').textContent='待機中';
+  document.getElementById('freeIcon').className='ti ti-player-play';
+  document.getElementById('freeRing').style.strokeDashoffset='0';
+}
+function lapFree(){if(!freeRunning||freeSec===0)return;addLog('ラップ',freeSec)}
+
+/* POMODORO */
+function updatePomoSettings(){
+  workSec=parseInt(document.getElementById('workMin').value)*60;
+  shortSec=parseInt(document.getElementById('shortMin').value)*60;
+  longSec=parseInt(document.getElementById('longMin').value)*60;
+  totalSets=parseInt(document.getElementById('setCount').value);
+  if(!pomoRunning){pomoSec=workSec;updatePomoUI()}
+  renderDots();
+}
+function renderDots(){
+  const d=document.getElementById('pomoDots');
+  d.innerHTML=Array.from({length:totalSets},(_,i)=>`<div class="dot ${i<pomoSet?'done':i===pomoSet&&pomoPhase==='work'?'current':''}" id="dot${i}"></div>`).join('');
+}
+function togglePomo(){
+  if(!pomoRunning){
+    pomoRunning=true;
+    if(pomoSec===0)pomoSec=workSec;
+    document.getElementById('pomoIcon').className='ti ti-player-pause';
+    document.getElementById('pomoStatusDot').className='status-dot running';
+    document.getElementById('pomoStatusText').textContent=pomoPhase==='work'?'作業中...':'休憩中...';
+    pomoInterval=setInterval(pomoTick,1000);
+    if(pomoPhase==='work')startTotal();
+  } else {
+    pomoRunning=false;clearInterval(pomoInterval);
+    document.getElementById('pomoIcon').className='ti ti-player-play';
+    document.getElementById('pomoStatusDot').className='status-dot paused';
+    document.getElementById('pomoStatusText').textContent='一時停止中';
+    stopTotal();
+  }
+}
+function pomoTick(){
+  pomoSec--;
+  if(pomoSec<=0){nextPomoPhase();return}
+  updatePomoUI();
+}
+function nextPomoPhase(){
+  clearInterval(pomoInterval);pomoRunning=false;
+  if(pomoPhase==='work'){
+    addLog('ポモドーロ #'+(pomoSet+1),workSec);
+    pomoSet++;
+    stopTotal();
+    if(pomoSet>=totalSets){pomoPhase='long';pomoSec=longSec;}
+    else{pomoPhase='short';pomoSec=shortSec;}
+  } else {
+    if(pomoPhase==='long'){pomoSet=0;}
+    pomoPhase='work';pomoSec=workSec;
+    startTotal();
+  }
+  renderDots();updatePomoUI();
+  document.getElementById('pomoIcon').className='ti ti-player-play';
+  document.getElementById('pomoStatusDot').className='status-dot';
+  document.getElementById('pomoStatusText').textContent='フェーズ完了 → スタートを押す';
+}
+function resetPomo(){
+  if(pomoRunning)togglePomo();
+  pomoSet=0;pomoPhase='work';pomoSec=workSec;
+  renderDots();updatePomoUI();
+  document.getElementById('pomoStatusDot').className='status-dot';
+  document.getElementById('pomoStatusText').textContent='スタートを押して開始';
+  document.getElementById('pomoIcon').className='ti ti-player-play';
+}
+function skipPomo(){if(pomoRunning)togglePomo();nextPomoPhase();}
+function updatePomoUI(){
+  const total=pomoPhase==='work'?workSec:pomoPhase==='short'?shortSec:longSec;
+  const pct=1-(pomoSec/total);
+  document.getElementById('pomoDisplay').textContent=fmt(pomoSec);
+  document.getElementById('pomoRing').style.strokeDashoffset=502*pct;
+  document.getElementById('pomoRing').style.stroke=pomoPhase==='work'?'var(--accent)':pomoPhase==='short'?'var(--accent2)':'var(--warn)';
+  const labels={work:'作業セッション',short:'短休憩',long:'長休憩'};
+  const rlabels={work:'集中モード',short:'休憩中',long:'長期休憩'};
+  document.getElementById('pomoPhaseLabel').textContent=labels[pomoPhase];
+  document.getElementById('pomoRingLabel').textContent=rlabels[pomoPhase];
+}
+
+function addLog(label,sec){
+  const now=new Date();const t=now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
+  logs.unshift({label,sec,t});
+  const el=document.getElementById('logList');
+  el.innerHTML=logs.slice(0,6).map(l=>`
+    <div class="log-item">
+      <span>${l.label}</span>
+      <span class="log-time">${l.t} | ${fmt(l.sec)}</span>
+    </div>`).join('');
+}
+
+// Init
+updatePomoSettings();
+renderPresets();renderCustom();
+pomoSec=workSec;updatePomoUI();
+</script>
+</body>
+</html>
