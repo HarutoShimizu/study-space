@@ -14,17 +14,14 @@
       --danger:#ff6b6b;--success:#4ecdc4;--warn:#ffd166;
     }
     body{
-      background:var(--bg);
-      color:var(--text);
-      font-family:'Syne',sans-serif;
-      min-height:100vh;
-      padding:0;
-      -webkit-tap-highlight-color: transparent; /* iPadのタップ時のハイライトを無効化 */
+      background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;
+      min-height:100vh;padding:0;
+      -webkit-tap-highlight-color: transparent;
     }
-    .app{display:grid;grid-template-columns:1fr 360px;min-height:100vh;gap:0}
+    /* 右側パネルを360pxから450pxに広げてYouTube画面を大きく */
+    .app{display:grid;grid-template-columns:1fr 450px;min-height:100vh;gap:0}
     
-    /* iPadの縦画面など、画面幅が狭いときは1カラムにする */
-    @media (max-width: 850px) {
+    @media (max-width: 950px) {
       .app { grid-template-columns: 1fr; }
       .left { border-right: none !important; border-bottom: 1px solid var(--border); }
     }
@@ -57,8 +54,7 @@
     .ring-wrap svg{transform:rotate(-90deg)}
     .ring-bg{fill:none;stroke:var(--border);stroke-width:6}
     .ring-fg{fill:none;stroke:var(--accent);stroke-width:6;stroke-linecap:round;transition:stroke-dashoffset .5s ease,stroke .3s}
-    .ring-fg.free-active { stroke: var(--accent2); } /* フリーモード時の一時的なカラー */
-    .ring-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;width: 80%;}
+    .ring-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;width:80%}
     .ring-mins{font-family:'DM Mono',monospace;font-size:2.2rem;font-weight:400;line-height:1}
     .ring-label{font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-top:4px}
 
@@ -118,6 +114,7 @@
     .status-dot.running{background:var(--success);box-shadow:0 0 0 3px rgba(78,205,196,.2)}
     .status-dot.paused{background:var(--warn)}
   </style>
+  <script src="https://www.youtube.com/iframe_api"></script>
 </head>
 <body>
 
@@ -140,7 +137,7 @@
       <div class="ring-wrap">
         <svg width="180" height="180" viewBox="0 0 180 180">
           <circle class="ring-bg" cx="90" cy="90" r="80"/>
-          <circle class="ring-fg free-active" id="freeRing" cx="90" cy="90" r="80" stroke-dasharray="502" stroke-dashoffset="0"/>
+          <circle class="ring-fg" id="freeRing" cx="90" cy="90" r="80" stroke-dasharray="502" stroke-dashoffset="0"/>
         </svg>
         <div class="ring-center">
           <div class="ring-mins" id="freeDisplay">00:00</div>
@@ -210,7 +207,9 @@
         <i class="ti ti-music" style="font-size:32px;color:var(--border)" aria-hidden="true"></i>
         <span>プレイリストを選択してください</span>
       </div>
-      <div id="ytFrame" style="display:none;width:100%;height:100%"></div>
+      <div id="ytPlayerContainer" style="display:none;width:100%;height:100%">
+        <div id="ytPlayer"></div>
+      </div>
     </div>
 
     <div class="section-title" style="margin-top:.5rem">プリセット</div>
@@ -240,6 +239,13 @@ const PRESETS=[
 
 let currentPlaying=null;
 let customPlaylists=[];
+let player=null; // YouTubeプレーヤーオブジェクト
+let isPlayerReady=false;
+
+// YouTube APIの準備ができたら呼ばれる関数
+function onYouTubeIframeAPIReady() {
+  isPlayerReady = true;
+}
 
 function renderPresets(){
   const el=document.getElementById('presetList');
@@ -281,12 +287,38 @@ function playPlaylist(idx,type){
     if(!pid){alert('有効なプレイリストURLを入力してください');return}
     id=pid;currentPlaying='c'+idx;
   }
-  const frame=document.getElementById('ytFrame');
+
+  const container=document.getElementById('ytPlayerContainer');
   const ph=document.getElementById('ytPlaceholder');
-  // iPad等モバイルブラウザ向けに、mute=1(消音)およびplaysinline=1を追加して自動再生を強化
-  frame.innerHTML=`<iframe width="100%" height="100%" src="https://www.youtube.com/embed/videoseries?list=${id}&autoplay=1&mute=1&playsinline=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
-  frame.style.display='block';
+  container.style.display='block';
   ph.style.display='none';
+
+  // 既存のプレーヤーがあれば破棄して新しく作る
+  if(player) {
+    player.destroy();
+  }
+
+  // APIを使用して、ノープレッシャーかつ制御可能なiframeを生成
+  player = new YT.Player('ytPlayer', {
+    width: '100%',
+    height: '100%',
+    playerVars: {
+      listType: 'playlist',
+      list: id,
+      autoplay: 1,
+      playsinline: 1,
+      host: 'https://www.youtube-nocookie.com' // セキュリティ制限回避
+    },
+    events: {
+      'onReady': (event) => {
+        // タイマーがすでに動いている状態なら、プレイリスト切り替え時にも自動再生
+        if(freeRunning || (pomoRunning && pomoPhase==='work')) {
+          event.target.playVideo();
+        }
+      }
+    }
+  });
+
   renderPresets();renderCustom();
 }
 
@@ -297,6 +329,20 @@ function addCustom(){
   customPlaylists.push({url:v,name:'カスタムリスト '+(customPlaylists.length+1)});
   document.getElementById('urlInput').value='';
   renderCustom();
+}
+
+// 外部からYouTubeの再生・停止を操作するヘルパー関数
+function syncYouTube(action) {
+  if (!player || typeof player.playVideo !== 'function') return;
+  try {
+    if (action === 'play') {
+      player.playVideo();
+    } else if (action === 'pause') {
+      player.pauseVideo();
+    }
+  } catch(e) {
+    console.log("YouTube control handling error:", e);
+  }
 }
 
 /* Timer state */
@@ -333,6 +379,7 @@ function toggleFree(){
     document.getElementById('freeModeLabel').textContent='計測中';
     freeInterval=setInterval(()=>{freeSec++;updateFreeUI()},1000);
     startTotal();
+    syncYouTube('play'); // YouTube 同時再生
   } else {
     freeRunning=false;
     clearInterval(freeInterval);
@@ -341,11 +388,11 @@ function toggleFree(){
     document.getElementById('freeStatusText').textContent='一時停止中';
     document.getElementById('freeModeLabel').textContent='一時停止';
     stopTotal();
+    syncYouTube('pause'); // YouTube 同時停止
   }
 }
 function updateFreeUI(){
   document.getElementById('freeDisplay').textContent=fmt(freeSec);
-  // フリーモードの進捗リング（1時間=3600秒で1周する演出例。お好みで変更可能）
   const pct = (freeSec % 3600) / 3600;
   document.getElementById('freeRing').style.strokeDashoffset = 502 * pct;
 }
@@ -359,6 +406,7 @@ function resetFree(){
   document.getElementById('freeModeLabel').textContent='待機中';
   document.getElementById('freeIcon').className='ti ti-player-play';
   document.getElementById('freeRing').style.strokeDashoffset='0';
+  syncYouTube('pause'); // リセット時も停止
 }
 function lapFree(){if(!freeRunning||freeSec===0)return;addLog('ラップ',freeSec)}
 
@@ -383,13 +431,20 @@ function togglePomo(){
     document.getElementById('pomoStatusDot').className='status-dot running';
     document.getElementById('pomoStatusText').textContent=pomoPhase==='work'?'作業中...':'休憩中...';
     pomoInterval=setInterval(pomoTick,1000);
-    if(pomoPhase==='work')startTotal();
+    
+    if(pomoPhase==='work') {
+      startTotal();
+      syncYouTube('play'); // 作業セッション開始時にYouTube再生
+    } else {
+      syncYouTube('pause'); // 休憩時間の開始時はYouTubeを止める（お好みで変更可）
+    }
   } else {
     pomoRunning=false;clearInterval(pomoInterval);
     document.getElementById('pomoIcon').className='ti ti-player-play';
     document.getElementById('pomoStatusDot').className='status-dot paused';
     document.getElementById('pomoStatusText').textContent='一時停止中';
     stopTotal();
+    syncYouTube('pause'); // 一時停止時にYouTube停止
   }
 }
 function pomoTick(){
@@ -399,6 +454,8 @@ function pomoTick(){
 }
 function nextPomoPhase(){
   clearInterval(pomoInterval);pomoRunning=false;
+  syncYouTube('pause'); // フェーズ切り替え時は一旦YouTubeを停止
+  
   if(pomoPhase==='work'){
     addLog('ポモドーロ #'+(pomoSet+1),workSec);
     pomoSet++;
@@ -408,7 +465,7 @@ function nextPomoPhase(){
   } else {
     if(pomoPhase==='long'){pomoSet=0;}
     pomoPhase='work';pomoSec=workSec;
-    startTotal();
+    // 次の作業自動スタートはさせず、ユーザーが「スタート」を押すのを待つ
   }
   renderDots();updatePomoUI();
   document.getElementById('pomoIcon').className='ti ti-player-play';
@@ -422,6 +479,7 @@ function resetPomo(){
   document.getElementById('pomoStatusDot').className='status-dot';
   document.getElementById('pomoStatusText').textContent='スタートを押して開始';
   document.getElementById('pomoIcon').className='ti ti-player-play';
+  syncYouTube('pause');
 }
 function skipPomo(){if(pomoRunning)togglePomo();nextPomoPhase();}
 function updatePomoUI(){
