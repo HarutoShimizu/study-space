@@ -34,6 +34,39 @@
       .left { border-right: none !important; border-bottom: 1px solid var(--border); }
     }
 
+    /* iPad Split View (half screen ~680px): BGMセクション自動非表示 */
+    @media (max-width: 680px) {
+      .right-bgm-section { display: none !important; }
+      .right { display: none !important; }
+      .app { grid-template-columns: 1fr !important; }
+      .left { border-bottom: none; height: 100vh; max-height: 100vh; overflow-y: auto; }
+      .task-container { flex: 2; min-height: 220px; }
+      .task-list { max-height: none; flex: 1; }
+      .total-time { font-size: 2.1rem; }
+      .ring-wrap, .ring-wrap svg { width: 130px; height: 130px; }
+      .ring-mins { font-size: 1.6rem; }
+    }
+
+    /* ナローモード: BGM非表示時に代替バナー */
+    .narrow-banner {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      background: rgba(124,106,255,0.08);
+      border: 1px solid rgba(124,106,255,0.2);
+      border-radius: 8px;
+      padding: 7px 12px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .narrow-banner .nb-icon { color: var(--accent); font-size: 14px; flex-shrink: 0; }
+    .narrow-banner .nb-text { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); font-size: 11px; }
+    .narrow-banner .nb-stop { background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 3px 8px; font-size: 10px; cursor: pointer; font-family: 'Syne', sans-serif; white-space: nowrap; }
+    .narrow-banner .nb-stop:hover { border-color: var(--danger); color: var(--danger); }
+    @media (max-width: 680px) {
+      .narrow-banner { display: flex; }
+    }
+
     .left{
       padding:1.5rem;
       border-right:1px solid var(--border);
@@ -251,6 +284,67 @@
     .btn-pip:hover{border-color:var(--accent);color:var(--accent)}
     .btn-pip.active{border-color:var(--accent2);color:var(--accent2);background:rgba(78,205,196,.08)}
 
+    /* BGM折りたたみヘッダー */
+    .bgm-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+      padding: 2px 0;
+    }
+    .bgm-header:hover .bgm-toggle-btn { border-color: var(--accent); color: var(--accent); }
+    .bgm-toggle-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-size: 11px;
+      font-family: 'Syne', sans-serif;
+      cursor: pointer;
+      transition: all .2s;
+      white-space: nowrap;
+    }
+    .bgm-toggle-btn .ti { font-size: 13px; transition: transform .25s; }
+    .bgm-toggle-btn.open .ti-chevron-down { transform: rotate(180deg); }
+    /* BGMボディ：アニメーション付き折りたたみ */
+    .bgm-body {
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      transition: max-height .35s ease, opacity .25s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+    .bgm-body.open {
+      max-height: 700px;
+      opacity: 1;
+    }
+    /* now-playing は常に表示（折りたたみ中も） */
+    .now-playing-compact {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--muted);
+      padding-top: 4px;
+    }
+    .now-playing-compact .np-title {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+      color: var(--text);
+      font-size: 11px;
+    }
+    /* 折りたたみ中はコンパクト表示、open中は非表示 */
+    .now-playing-compact.hidden { display: none; }
+
     /* iPad 半画面（幅700px以下）：右パネルのBGMエリアを非表示 */
     @media (max-width: 700px) {
       .right-bgm-section { display: none !important; }
@@ -363,6 +457,13 @@
       </div>
     </div>
 
+    <!-- ナローモード: BGM非表示時にミニ再生状況バナー -->
+    <div class="narrow-banner" id="narrowBanner">
+      <i class="ti ti-disc nb-icon" id="narrowBannerIcon" aria-hidden="true"></i>
+      <span class="nb-text" id="narrowBannerText">BGMを選択してください（フル画面で表示）</span>
+      <button class="nb-stop" onclick="syncYouTube('pause')" title="BGMを停止">停止</button>
+    </div>
+
     <div class="content-box task-container">
       <div class="section-title">タスク / やることリスト</div>
       <div class="task-list" id="taskList">
@@ -376,38 +477,56 @@
   </div>
 
   <div class="right">
-    <div class="right-bgm-section" style="display:flex;flex-direction:column;gap:1rem;">
-      <div class="section-title">BGM / 作業音楽</div>
+    <div class="right-bgm-section content-box" style="flex-shrink:0;">
 
-      <div class="yt-wrap" id="ytWrap">
-        <div class="yt-placeholder" id="ytPlaceholder">
-          <i class="ti ti-music" style="font-size:28px;color:var(--border)" aria-hidden="true"></i>
-          <span>URLを追加して選択してください</span>
-        </div>
-        <div id="ytPlayerContainer" style="display:none;width:100%;height:100%">
-          <div id="ytPlayer"></div>
-        </div>
-      </div>
-
-      <div class="now-playing-box">
-        <i class="ti ti-disc" style="color:var(--accent)" aria-hidden="true"></i>
-        <span class="now-playing-title" id="nowPlayingTitle">動画が再生されていません</span>
-        <button class="btn-pip" id="pipBtn" onclick="togglePiP()" title="ピクチャ・イン・ピクチャ">
-          <i class="ti ti-picture-in-picture" aria-hidden="true"></i> PiP
+      <!-- 折りたたみヘッダー -->
+      <div class="bgm-header" onclick="toggleBgmSection()">
+        <div class="section-title" style="border:none;margin:0;padding:0">BGM / 作業音楽</div>
+        <button class="bgm-toggle-btn" id="bgmToggleBtn" aria-label="BGMセクションを開閉">
+          <i class="ti ti-chevron-down" aria-hidden="true"></i>
+          <span id="bgmToggleLabel">表示</span>
         </button>
       </div>
 
-      <div class="content-box" style="flex:1;overflow:hidden">
-        <div class="section-title" style="border:none">カスタムお気に入り</div>
-        <div class="playlist-list" id="customList">
-          <div style="font-size:11px;color:var(--muted)">URLを追加してください</div>
-        </div>
-        <div class="input-row">
-          <input type="text" id="urlInput" placeholder="YouTube 動画 / 再生リストのURL" />
-          <button onclick="addCustom()" id="addBtn">追加</button>
-        </div>
+      <!-- 折りたたみ中に表示するコンパクト再生状況 -->
+      <div class="now-playing-compact" id="nowPlayingCompact">
+        <i class="ti ti-disc" style="color:var(--accent);font-size:13px;" aria-hidden="true"></i>
+        <span class="np-title" id="nowPlayingCompactTitle">動画が再生されていません</span>
+        <button class="nb-stop" onclick="syncYouTube('pause');event.stopPropagation();" title="停止" style="font-size:10px;padding:2px 7px;">停止</button>
       </div>
-    </div>
+
+      <!-- 折りたたみボディ（デフォルト非表示） -->
+      <div class="bgm-body" id="bgmBody">
+        <div class="yt-wrap" id="ytWrap">
+          <div class="yt-placeholder" id="ytPlaceholder">
+            <i class="ti ti-music" style="font-size:28px;color:var(--border)" aria-hidden="true"></i>
+            <span>URLを追加して選択してください</span>
+          </div>
+          <div id="ytPlayerContainer" style="display:none;width:100%;height:100%">
+            <div id="ytPlayer"></div>
+          </div>
+        </div>
+
+        <div class="now-playing-box">
+          <i class="ti ti-disc" style="color:var(--accent)" aria-hidden="true"></i>
+          <span class="now-playing-title" id="nowPlayingTitle">動画が再生されていません</span>
+          <button class="btn-pip" id="pipBtn" onclick="togglePiP()" title="ピクチャ・イン・ピクチャ">
+            <i class="ti ti-picture-in-picture" aria-hidden="true"></i> PiP
+          </button>
+        </div>
+
+        <div class="content-box" style="overflow:hidden">
+          <div class="section-title" style="border:none">カスタムお気に入り</div>
+          <div class="playlist-list" id="customList">
+            <div style="font-size:11px;color:var(--muted)">URLを追加してください</div>
+          </div>
+          <div class="input-row">
+            <input type="text" id="urlInput" placeholder="YouTube 動画 / 再生リストのURL" />
+            <button onclick="addCustom()" id="addBtn">追加</button>
+          </div>
+        </div>
+      </div><!-- /bgm-body -->
+    </div><!-- /right-bgm-section -->
 
     <div class="content-box" style="flex:1">
       <div class="section-title" style="border:none">セッション記録</div>
@@ -537,6 +656,7 @@ function playPlaylist(idx){
   
   currentPlaying=idx;
   document.getElementById('nowPlayingTitle').textContent = "読み込み中...";
+  syncCompactTitle("読み込み中...");
 
   const container=document.getElementById('ytPlayerContainer');
   const ph=document.getElementById('ytPlaceholder');
@@ -584,6 +704,7 @@ function playPlaylist(idx){
         const codes = {2:'不正なIDです',5:'HTML5プレーヤーエラー',100:'動画が見つかりません（非公開・削除済み）',101:'この動画は埋め込み再生が許可されていません',150:'この動画は埋め込み再生が許可されていません'};
         const msg = codes[event.data] || `エラー (コード: ${event.data})`;
         document.getElementById('nowPlayingTitle').textContent = `⚠️ ${msg}`;
+        syncCompactTitle(`⚠️ ${msg}`);
       }
     }
   };
@@ -628,6 +749,7 @@ function updateCurrentVideoTitle() {
     if (videoData && videoData.title) {
       // 現在再生中の動画タイトルをnowPlayingに表示
       document.getElementById('nowPlayingTitle').textContent = videoData.title;
+      syncCompactTitle(videoData.title);
 
       // リスト側は「動画」タイプの場合のみこれで更新（再生リストは別途fetchで取得済）
       if (currentPlaying !== null && customPlaylists[currentPlaying]) {
@@ -700,6 +822,7 @@ function deleteCustom(idx) {
     document.getElementById('ytPlayerContainer').style.display='none';
     document.getElementById('ytPlaceholder').style.display='flex';
     document.getElementById('nowPlayingTitle').textContent = "動画が再生されていません";
+    syncCompactTitle("動画が再生されていません");
     currentPlaying = null;
   } else if (currentPlaying > idx) {
     currentPlaying--;
@@ -715,6 +838,78 @@ function syncYouTube(action) {
     if (action === 'play') { player.playVideo(); }
     else if (action === 'pause') { player.pauseVideo(); }
   } catch(e) { console.log(e); }
+}
+
+/* ===== BGMセクション 折りたたみ ===== */
+let bgmOpen = false; // デフォルト非表示
+
+function toggleBgmSection() {
+  bgmOpen = !bgmOpen;
+  const body = document.getElementById('bgmBody');
+  const btn = document.getElementById('bgmToggleBtn');
+  const label = document.getElementById('bgmToggleLabel');
+  const compact = document.getElementById('nowPlayingCompact');
+  if (bgmOpen) {
+    body.classList.add('open');
+    btn.classList.add('open');
+    label.textContent = '隠す';
+    compact.classList.add('hidden');
+  } else {
+    body.classList.remove('open');
+    btn.classList.remove('open');
+    label.textContent = '表示';
+    compact.classList.remove('hidden');
+  }
+}
+
+/* BGMタイトルをコンパクト表示にも同期 */
+function syncCompactTitle(title) {
+  const el = document.getElementById('nowPlayingCompactTitle');
+  if (el) el.textContent = title || '動画が再生されていません';
+}
+
+/* ===== ナローバナー更新 ===== */
+function updateNarrowBanner() {
+  const banner = document.getElementById('narrowBanner');
+  const bannerText = document.getElementById('narrowBannerText');
+  const bannerIcon = document.getElementById('narrowBannerIcon');
+  if (!banner) return;
+  const title = document.getElementById('nowPlayingTitle').textContent;
+  if (title && title !== '動画が再生されていません') {
+    bannerText.textContent = '🎵 ' + title;
+    bannerIcon.className = 'ti ti-disc nb-icon';
+  } else {
+    bannerText.textContent = 'BGMを選択してください（フル画面で表示）';
+    bannerIcon.className = 'ti ti-music nb-icon';
+  }
+  syncCompactTitle(title);
+}
+
+/* ===== Media Session API: ロック画面・コントロールセンターから操作可能に ===== */
+function setupMediaSession(title) {
+  if (!('mediaSession' in navigator)) return;
+  navigator.mediaSession.metadata = new MediaMetadata({
+    title: title || 'Study Timer',
+    artist: 'Study Space',
+    album: 'タイマー実行中',
+  });
+  navigator.mediaSession.setActionHandler('play', () => {
+    if (mode === 'pomodoro' && !pomoRunning) togglePomo();
+    else if (mode === 'free' && !freeRunning) toggleFree();
+  });
+  navigator.mediaSession.setActionHandler('pause', () => {
+    if (mode === 'pomodoro' && pomoRunning) togglePomo();
+    else if (mode === 'free' && freeRunning) toggleFree();
+  });
+  navigator.mediaSession.setActionHandler('stop', () => {
+    if (mode === 'pomodoro') resetPomo();
+    else resetFree();
+  });
+}
+
+function setMediaSessionState(playing) {
+  if (!('mediaSession' in navigator)) return;
+  navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
 }
 
 /* ===== ピクチャ・イン・ピクチャ ===== */
@@ -800,6 +995,9 @@ function toggleFree(){
     freeInterval=setInterval(()=>{freeSec++;updateFreeUI()},1000);
     startTotal();
     syncYouTube('play');
+    setupMediaSession(document.getElementById('nowPlayingTitle').textContent);
+    setMediaSessionState(true);
+    updateNarrowBanner();
   } else {
     freeRunning=false;
     clearInterval(freeInterval);
@@ -808,6 +1006,8 @@ function toggleFree(){
     document.getElementById('freeModeLabel').textContent='一時停止';
     stopTotal();
     syncYouTube('pause');
+    setMediaSessionState(false);
+    updateNarrowBanner();
   }
 }
 function updateFreeUI(){
@@ -869,12 +1069,17 @@ function togglePomo(){
     } else {
       syncYouTube('pause');
     }
+    setupMediaSession(document.getElementById('nowPlayingTitle').textContent);
+    setMediaSessionState(pomoPhase==='work');
+    updateNarrowBanner();
   } else {
     pomoRunning=false;clearInterval(pomoInterval);
     document.getElementById('pomoIcon').className='ti ti-player-play';
     document.getElementById('pomoStatusDot').className='status-dot paused';
     stopTotal();
     syncYouTube('pause');
+    setMediaSessionState(false);
+    updateNarrowBanner();
   }
 }
 function pomoTick(){
@@ -939,6 +1144,7 @@ renderCustom();
 renderTasks();
 pomoSec=workSec;updatePomoUI();
 setMode('pomodoro');
+updateNarrowBanner();
 
 // 既存のリスト（localStorage保存済み）の名前が仮のままなら起動時に解決
 customPlaylists.forEach((_, i) => resolveTitle(i));
