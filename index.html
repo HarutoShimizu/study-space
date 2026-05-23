@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Study Space - Premium Timer</title>
+  <title>Study Space</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;700&display=swap');
@@ -15,362 +15,194 @@
     }
     body{
       background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;
-      height:100vh;overflow:hidden;padding:0;
-      -webkit-tap-highlight-color: transparent;
+      height:100vh;overflow:hidden;
+      -webkit-tap-highlight-color:transparent;
     }
-    
-    /* iPadの1画面に収めるためのグリッド構成 */
+
+    /* ===== 3カラム グリッド ===== */
     .app{
       display:grid;
-      grid-template-columns:1fr 1fr;
+      grid-template-columns:300px 1fr 340px;
       height:100vh;
-      max-height:100vh;
       overflow:hidden;
     }
-    
-    @media (max-width: 950px) {
-      .app { grid-template-columns: 1fr; overflow-y: auto; height: auto; max-height: none; }
-      body { overflow: auto; height: auto; }
-      .left { border-right: none !important; border-bottom: 1px solid var(--border); }
+
+    /* タブレット（950px以下）: 左＋右の2カラム、中央をright下に */
+    @media(max-width:1100px){
+      .app{ grid-template-columns:280px 1fr; grid-template-rows:1fr auto; }
+      .col-mid{ grid-column:2; grid-row:1; }
+      .col-right{ grid-column:1/3; grid-row:2; max-height:340px; flex-direction:row; }
+      .yt-section{ flex:1.4; }
+      .right-bottom{ flex:1; }
+    }
+    @media(max-width:700px){
+      body{ overflow:auto; height:auto; }
+      .app{ grid-template-columns:1fr; grid-template-rows:auto; height:auto; }
+      .col-left{ border-right:none; border-bottom:1px solid var(--border); }
+      .col-mid{ grid-column:1; grid-row:2; border-right:none; border-bottom:1px solid var(--border); }
+      .col-right{ grid-column:1; grid-row:3; max-height:none; flex-direction:column; }
     }
 
-    /* iPad Split View (half screen ~680px): BGMセクション自動非表示 */
-    @media (max-width: 680px) {
-      .right-bgm-section { display: none !important; }
-      .right { display: none !important; }
-      .app { grid-template-columns: 1fr !important; }
-      .left { border-bottom: none; height: 100vh; max-height: 100vh; overflow-y: auto; }
-      .task-container { flex: 2; min-height: 220px; }
-      .task-list { max-height: none; flex: 1; }
-      .total-time { font-size: 2.1rem; }
-      .ring-wrap, .ring-wrap svg { width: 130px; height: 130px; }
-      .ring-mins { font-size: 1.6rem; }
-    }
-
-    /* ナローモード: BGM非表示時に代替バナー */
-    .narrow-banner {
-      display: none;
-      align-items: center;
-      gap: 8px;
-      background: rgba(124,106,255,0.08);
-      border: 1px solid rgba(124,106,255,0.2);
-      border-radius: 8px;
-      padding: 7px 12px;
-      font-size: 11px;
-      color: var(--muted);
-    }
-    .narrow-banner .nb-icon { color: var(--accent); font-size: 14px; flex-shrink: 0; }
-    .narrow-banner .nb-text { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); font-size: 11px; }
-    .narrow-banner .nb-stop { background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 3px 8px; font-size: 10px; cursor: pointer; font-family: 'Syne', sans-serif; white-space: nowrap; }
-    .narrow-banner .nb-stop:hover { border-color: var(--danger); color: var(--danger); }
-    @media (max-width: 680px) {
-      .narrow-banner { display: flex; }
-    }
-
-    .left{
-      padding:1.5rem;
+    /* ===== カラム共通 ===== */
+    .col-left{
+      padding:1.2rem 1rem;
       border-right:1px solid var(--border);
       display:flex;
       flex-direction:column;
-      gap:1rem;
+      gap:.85rem;
       overflow:hidden;
     }
-    .right{
-      padding:1.5rem;
+    .col-mid{
+      padding:1.2rem 1rem;
+      border-right:1px solid var(--border);
+      display:flex;
+      flex-direction:column;
+      gap:.85rem;
+      overflow:hidden;
+    }
+    .col-right{
       background:var(--surface);
       display:flex;
       flex-direction:column;
-      gap:1rem;
       overflow:hidden;
     }
 
-    /* Total time */
-    .total-block{margin-bottom:0}
-    .total-label{font-size:11px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:.2rem}
-    .total-time{font-family:'DM Mono',monospace;font-size:2.8rem;font-weight:400;color:var(--text);line-height:1;letter-spacing:-.02em}
-    .total-time span{color:var(--muted);font-size:1.6rem}
+    /* ===== 今日の学習時間 ===== */
+    .total-label{font-size:10px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:.15rem}
+    .total-time{font-family:'DM Mono',monospace;font-size:2.4rem;font-weight:400;color:var(--text);line-height:1;letter-spacing:-.02em}
+    .total-time span{color:var(--muted);font-size:1.3rem}
 
-    /* Mode tabs */
-    .mode-tabs{display:flex;gap:8px}
-    .tab{padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Syne',sans-serif;font-size:12px;cursor:pointer;transition:all .2s}
+    /* ===== モードタブ ===== */
+    .mode-tabs{display:flex;gap:6px}
+    .tab{padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Syne',sans-serif;font-size:11px;cursor:pointer;transition:all .2s}
     .tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
     .tab:hover:not(.active){border-color:var(--accent);color:var(--accent)}
 
-    /* Timer card - 横並びスタイル */
+    /* ===== タイマーカード ===== */
     .timer-card{
-      background:var(--surface);
-      border:1px solid var(--border);
-      border-radius:14px;
-      padding:1.2rem;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      gap:2rem;
-      position:relative;
+      background:var(--surface);border:1px solid var(--border);border-radius:14px;
+      padding:1rem;display:flex;align-items:center;justify-content:center;gap:1.5rem;
     }
-    .timer-info-pane{
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-    }
-    .timer-phase{font-size:11px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:.5rem}
+    .timer-info-pane{display:flex;flex-direction:column;align-items:center}
+    .timer-phase{font-size:10px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:.4rem}
 
-    /* Progress ring */
-    .ring-wrap{position:relative;width:150px;height:150px}
-    .ring-wrap svg{transform:rotate(-90deg);width:150px;height:150px}
+    /* リング */
+    .ring-wrap{position:relative;width:130px;height:130px}
+    .ring-wrap svg{transform:rotate(-90deg);width:130px;height:130px}
     .ring-bg{fill:none;stroke:var(--border);stroke-width:5}
     .ring-fg{fill:none;stroke:var(--accent);stroke-width:5;stroke-linecap:round;transition:stroke-dashoffset .5s ease,stroke .3s}
     .ring-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;width:85%}
-    .ring-mins{font-family:'DM Mono',monospace;font-size:1.9rem;font-weight:400;line-height:1}
-    .ring-label{font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-top:2px}
+    .ring-mins{font-family:'DM Mono',monospace;font-size:1.6rem;font-weight:400;line-height:1}
+    .ring-label{font-size:9px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-top:2px}
 
-    /* Controls */
-    .controls{display:flex;flex-direction:column;align-items:center;gap:10px}
-    .btn-main{width:48px;height:48px;border-radius:50%;border:none;background:var(--accent);color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s,opacity .2s}
+    /* コントロール */
+    .controls{display:flex;flex-direction:column;align-items:center;gap:8px}
+    .btn-main{width:44px;height:44px;border-radius:50%;border:none;background:var(--accent);color:#fff;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s,opacity .2s}
     .btn-main:hover{opacity:.85}
     .btn-main:active{transform:scale(.93)}
-    .btn-sec{width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
+    .btn-sec{width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
     .btn-sec:hover{border-color:var(--text);color:var(--text)}
 
-    /* Pomodoro count */
-    .pomo-dots{display:flex;gap:5px;margin-top:0.5rem}
-    .dot{width:7px;height:7px;border-radius:50%;background:var(--border);transition:background .3s}
+    /* ポモドーロドット */
+    .pomo-dots{display:flex;gap:4px;margin-top:.4rem}
+    .dot{width:6px;height:6px;border-radius:50%;background:var(--border);transition:background .3s}
     .dot.done{background:var(--accent)}
     .dot.current{background:var(--warn)}
 
-    /* Right panel Titles */
-    .section-title{font-size:11px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;padding-bottom:.3rem;border-bottom:1px solid var(--border);margin-bottom:0.25rem}
-
-    /* Generic Content Box */
-    .content-box{
-      background:var(--surface);
-      border:1px solid var(--border);
-      border-radius:12px;
-      padding:0.8rem;
-      display:flex;
-      flex-direction:column;
-      overflow:hidden;
-    }
-
-    /* Playlist UI */
-    .playlist-list{display:flex;flex-direction:column;gap:6px;flex:1;overflow-y:auto}
-    .playlist-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);cursor:pointer;transition:all .2s;position:relative}
-    .playlist-item:hover{border-color:var(--accent);background:rgba(124,106,255,.08)}
-    .playlist-item.playing{border-color:var(--accent2);background:rgba(78,205,196,.08)}
-    .playlist-name{font-size:12px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
-    .playlist-badge{font-size:9px;padding:1px 5px;border-radius:8px;background:rgba(78,205,196,.15);color:var(--accent2);border:1px solid rgba(78,205,196,.3);flex-shrink:0}
-
-    /* Generic Input styling */
-    .input-row{display:flex;gap:6px;margin-top:0.5rem}
-    .input-row input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-size:12px;font-family:'Syne',sans-serif;outline:none}
-    .input-row input:focus{border-color:var(--accent)}
-    .input-row button{padding:6px 12px;background:var(--accent);border:none;border-radius:6px;color:#fff;font-size:12px;cursor:pointer;font-family:'Syne',sans-serif;white-space:nowrap}
-    .input-row button:disabled{opacity:0.5;cursor:not-allowed}
-
-    .btn-delete{background:transparent;border:none;color:var(--muted);cursor:pointer;padding:4px;border-radius:4px;display:flex;align-items:center;justify-content:center;transition:all .2s}
-    .btn-delete:hover{color:var(--danger);background:rgba(255,107,107,0.1)}
-
-    /* YouTube embed */
-    .yt-wrap{border-radius:10px;overflow:hidden;aspect-ratio:16/9;background:var(--surface2);border:1px solid var(--border)}
-    .yt-wrap iframe{width:100%;height:100%;border:none}
-    .yt-placeholder{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.3rem;color:var(--muted);font-size:12px}
-
-    .now-playing-box{background:rgba(124,106,255,0.06);border:1px dashed var(--border);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text)}
-    .now-playing-title{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
-
-    /* 📝 Task List UI */
-    .task-container{flex:1;display:flex;flex-direction:column;overflow:hidden}
-    .task-list{display:flex;flex-direction:column;gap:6px;overflow-y:auto;flex:1;padding-right:2px}
-    .task-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface2)}
-    .task-checkbox{background:transparent;border:1px solid var(--muted);color:transparent;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:10px;transition:all .2s;flex-shrink:0}
-    .task-item.completed .task-checkbox{background:var(--success);border-color:var(--success);color:#fff}
-    .task-text{font-size:12px;flex:1;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .task-item.completed .task-text{color:var(--muted);text-decoration:line-through}
-
-    /* 🎛️ ダイヤル式設定UIのスタイル */
-    .pomo-settings-dial-wrap {
-      display: flex;
-      gap: 10px;
-      justify-content: space-between;
-      align-items: stretch;
-    }
-    .dial-picker-box {
-      flex: 1;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 6px 4px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      position: relative;
-    }
-    .dial-label {
-      font-size: 10px;
-      color: var(--muted);
-      margin-bottom: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .dial-select {
-      width: 100%;
-      background: transparent;
-      border: none;
-      color: var(--text);
-      font-family: 'DM Mono', monospace;
-      font-size: 15px;
-      font-weight: 500;
-      text-align: center;
-      text-align-last: center;
-      outline: none;
-      cursor: pointer;
-      -webkit-appearance: none;
-      -moz-appearance: none;
-      appearance: none;
-      padding: 4px 0;
-    }
-    .dial-picker-box::after {
-      content: '▾';
-      font-size: 9px;
-      color: var(--muted);
-      position: absolute;
-      bottom: 2px;
-      pointer-events: none;
-    }
-
-    /* コンパクトカウンター */
-    .counter-box {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      background: rgba(255,255,255,0.02);
-      border-radius: 4px;
-      padding: 2px;
-      width: 100%;
-      justify-content: space-between;
-    }
-    .counter-btn {
-      width: 22px;
-      height: 22px;
-      border: 1px solid var(--border);
-      background: var(--surface2);
-      color: var(--text);
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 11px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .counter-btn:active { background: var(--border); }
-    .counter-value {
-      font-family: 'DM Mono', monospace;
-      font-size: 14px;
-      color: var(--text);
-    }
-
-    /* Log list */
-    .log-list{display:flex;flex-direction:column;gap:4px;max-height:85px;overflow-y:auto}
-    .log-item{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted);padding:2px 0;border-bottom:1px solid var(--border)}
-    .log-item:last-child{border-bottom:none}
-    .log-time{font-family:'DM Mono',monospace;color:var(--accent)}
-
-    /* PiP ボタン */
-    .btn-pip{
-      padding:4px 10px;border-radius:6px;border:1px solid var(--border);
-      background:transparent;color:var(--muted);font-size:11px;font-family:'Syne',sans-serif;
-      cursor:pointer;display:flex;align-items:center;gap:4px;transition:all .2s;white-space:nowrap;
-    }
-    .btn-pip:hover{border-color:var(--accent);color:var(--accent)}
-    .btn-pip.active{border-color:var(--accent2);color:var(--accent2);background:rgba(78,205,196,.08)}
-
-    /* BGM折りたたみヘッダー */
-    .bgm-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      cursor: pointer;
-      user-select: none;
-      padding: 2px 0;
-    }
-    .bgm-header:hover .bgm-toggle-btn { border-color: var(--accent); color: var(--accent); }
-    .bgm-toggle-btn {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      padding: 4px 10px;
-      border-radius: 6px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--muted);
-      font-size: 11px;
-      font-family: 'Syne', sans-serif;
-      cursor: pointer;
-      transition: all .2s;
-      white-space: nowrap;
-    }
-    .bgm-toggle-btn .ti { font-size: 13px; transition: transform .25s; }
-    .bgm-toggle-btn.open .ti-chevron-down { transform: rotate(180deg); }
-    /* BGMボディ：アニメーション付き折りたたみ */
-    .bgm-body {
-      overflow: hidden;
-      max-height: 0;
-      opacity: 0;
-      transition: max-height .35s ease, opacity .25s ease;
-      display: flex;
-      flex-direction: column;
-      gap: 0.8rem;
-    }
-    .bgm-body.open {
-      max-height: 700px;
-      opacity: 1;
-    }
-    /* now-playing は常に表示（折りたたみ中も） */
-    .now-playing-compact {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 11px;
-      color: var(--muted);
-      padding-top: 4px;
-    }
-    .now-playing-compact .np-title {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      flex: 1;
-      color: var(--text);
-      font-size: 11px;
-    }
-    /* 折りたたみ中はコンパクト表示、open中は非表示 */
-    .now-playing-compact.hidden { display: none; }
-
-    /* iPad 半画面（幅700px以下）：右パネルのBGMエリアを非表示 */
-    @media (max-width: 700px) {
-      .right-bgm-section { display: none !important; }
-      /* タスクエリアを左パネルで大きく取る */
-      .task-container { min-height: 200px; flex: 2; }
-    }
-
-    /* タスクエリアを全幅モードでも広く */
-    @media (max-width: 950px) {
-      .task-container { min-height: 180px; flex: 2; }
-    }
-
-    .status-bar{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);margin-top:0.4rem}
+    /* ステータス */
+    .status-bar{display:flex;align-items:center;gap:5px;margin-top:.3rem}
     .status-dot{width:6px;height:6px;border-radius:50%;background:var(--muted);flex-shrink:0}
     .status-dot.running{background:var(--success);box-shadow:0 0 0 2px rgba(78,205,196,.2)}
     .status-dot.paused{background:var(--warn)}
+
+    /* ===== セクションタイトル ===== */
+    .section-title{font-size:10px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;padding-bottom:.25rem;border-bottom:1px solid var(--border);margin-bottom:.3rem}
+
+    /* ===== コンテントボックス ===== */
+    .content-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:.7rem;display:flex;flex-direction:column;overflow:hidden}
+
+    /* ===== ポモドーロ設定 ===== */
+    .pomo-settings-dial-wrap{display:flex;gap:8px;justify-content:space-between;align-items:stretch}
+    .dial-picker-box{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 4px;display:flex;flex-direction:column;align-items:center;position:relative}
+    .dial-label{font-size:9px;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em}
+    .dial-select{width:100%;background:transparent;border:none;color:var(--text);font-family:'DM Mono',monospace;font-size:14px;font-weight:500;text-align:center;text-align-last:center;outline:none;cursor:pointer;-webkit-appearance:none;appearance:none;padding:3px 0}
+    .dial-picker-box::after{content:'▾';font-size:8px;color:var(--muted);position:absolute;bottom:2px;pointer-events:none}
+    .counter-box{display:flex;align-items:center;gap:3px;width:100%;justify-content:space-between}
+    .counter-btn{width:20px;height:20px;border:1px solid var(--border);background:var(--surface2);color:var(--text);border-radius:4px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center}
+    .counter-btn:active{background:var(--border)}
+    .counter-value{font-family:'DM Mono',monospace;font-size:13px;color:var(--text)}
+
+    /* ===== タスクリスト ===== */
+    .task-container{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
+    .task-list{display:flex;flex-direction:column;gap:5px;overflow-y:auto;flex:1;padding-right:2px}
+    .task-item{display:flex;align-items:center;gap:7px;padding:7px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2)}
+    .task-checkbox{background:transparent;border:1px solid var(--muted);color:transparent;width:15px;height:15px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:9px;transition:all .2s;flex-shrink:0}
+    .task-item.completed .task-checkbox{background:var(--success);border-color:var(--success);color:#fff}
+    .task-text{font-size:12px;flex:1;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .task-item.completed .task-text{color:var(--muted);text-decoration:line-through}
+    .btn-delete{background:transparent;border:none;color:var(--muted);cursor:pointer;padding:3px;border-radius:4px;display:flex;align-items:center;justify-content:center;transition:all .2s}
+    .btn-delete:hover{color:var(--danger);background:rgba(255,107,107,.1)}
+
+    /* ===== 入力行 ===== */
+    .input-row{display:flex;gap:5px;margin-top:.4rem}
+    .input-row input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text);font-size:11px;font-family:'Syne',sans-serif;outline:none}
+    .input-row input:focus{border-color:var(--accent)}
+    .input-row button{padding:5px 10px;background:var(--accent);border:none;border-radius:6px;color:#fff;font-size:11px;cursor:pointer;font-family:'Syne',sans-serif;white-space:nowrap}
+
+    /* ===== セッション記録 ===== */
+    .log-list{display:flex;flex-direction:column;gap:3px;overflow-y:auto;flex:1}
+    .log-item{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted);padding:3px 0;border-bottom:1px solid var(--border)}
+    .log-item:last-child{border-bottom:none}
+    .log-time{font-family:'DM Mono',monospace;color:var(--accent);font-size:10px}
+
+    /* ===== 右カラム: YouTube エリア ===== */
+    .yt-section{
+      display:flex;flex-direction:column;gap:.7rem;
+      padding:1rem;
+      border-bottom:1px solid var(--border);
+      flex-shrink:0;
+    }
+    .yt-header{display:flex;align-items:center;justify-content:space-between}
+    .yt-wrap{border-radius:10px;overflow:hidden;aspect-ratio:16/9;background:var(--surface2);border:1px solid var(--border);position:relative}
+    .yt-wrap iframe{width:100%;height:100%;border:none}
+    .yt-placeholder{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.3rem;color:var(--muted);font-size:12px}
+    .now-playing-bar{background:rgba(124,106,255,.06);border:1px dashed var(--border);border-radius:8px;padding:6px 10px;display:flex;align-items:center;gap:6px;font-size:11px}
+    .now-playing-title{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;color:var(--text)}
+
+    /* プレイリスト */
+    .playlist-list{display:flex;flex-direction:column;gap:5px;overflow-y:auto;max-height:130px}
+    .playlist-item{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);cursor:pointer;transition:all .2s}
+    .playlist-item:hover{border-color:var(--accent);background:rgba(124,106,255,.08)}
+    .playlist-item.playing{border-color:var(--accent2);background:rgba(78,205,196,.08)}
+    .playlist-name{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+    .playlist-badge{font-size:9px;padding:1px 5px;border-radius:8px;background:rgba(78,205,196,.15);color:var(--accent2);border:1px solid rgba(78,205,196,.3);flex-shrink:0}
+
+    /* PiPボタン */
+    .btn-pip{padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:10px;font-family:'Syne',sans-serif;cursor:pointer;display:flex;align-items:center;gap:3px;transition:all .2s;white-space:nowrap}
+    .btn-pip:hover{border-color:var(--accent);color:var(--accent)}
+    .btn-pip.active{border-color:var(--accent2);color:var(--accent2);background:rgba(78,205,196,.08)}
+
+    /* ===== 右カラム下部: プレイリスト追加＋セッション記録 ===== */
+    .right-bottom{
+      display:flex;flex-direction:column;gap:.7rem;
+      padding:1rem;
+      flex:1;
+      overflow:hidden;
+      min-height:0;
+    }
+    .right-bottom .log-section{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
   </style>
   <script src="https://www.youtube.com/iframe_api"></script>
 </head>
 <body>
 
-<h2 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">勉強タイマーアプリ</h2>
+<h2 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">勉強タイマーアプリ</h2>
 
 <div class="app">
-  <div class="left">
-    <div class="total-block">
+
+  <!-- ===== 左カラム: タイマー ===== -->
+  <div class="col-left">
+    <div>
       <div class="total-label">今日の学習時間</div>
       <div class="total-time" id="totalDisplay">00<span>h</span> 00<span>m</span> 00<span>s</span></div>
     </div>
@@ -380,6 +212,7 @@
       <button class="tab" id="tabFree" onclick="setMode('free')">フリー</button>
     </div>
 
+    <!-- ポモドーロ -->
     <div id="pomoMode" class="timer-card">
       <div class="timer-info-pane">
         <div class="timer-phase" id="pomoPhaseLabel">作業セッション</div>
@@ -395,17 +228,15 @@
         </div>
         <div class="pomo-dots" id="pomoDots"></div>
       </div>
-      
       <div class="controls">
-        <button class="btn-main" id="pomoBtn" onclick="togglePomo()"><i class="ti ti-player-play" aria-hidden="true" id="pomoIcon"></i></button>
+        <button class="btn-main" onclick="togglePomo()"><i class="ti ti-player-play" id="pomoIcon" aria-hidden="true"></i></button>
         <button class="btn-sec" onclick="skipPomo()" title="スキップ"><i class="ti ti-player-skip-forward" aria-hidden="true"></i></button>
         <button class="btn-sec" onclick="resetPomo()" title="リセット"><i class="ti ti-refresh" aria-hidden="true"></i></button>
-        <div class="status-bar">
-          <div class="status-dot" id="pomoStatusDot"></div>
-        </div>
+        <div class="status-bar"><div class="status-dot" id="pomoStatusDot"></div></div>
       </div>
     </div>
 
+    <!-- フリー -->
     <div id="freeMode" class="timer-card" style="display:none">
       <div class="timer-info-pane">
         <div class="timer-phase">集中タイマー</div>
@@ -420,19 +251,17 @@
           </div>
         </div>
       </div>
-      
       <div class="controls">
-        <button class="btn-main" id="freeBtn" onclick="toggleFree()"><i class="ti ti-player-play" aria-hidden="true" id="freeIcon"></i></button>
+        <button class="btn-main" onclick="toggleFree()"><i class="ti ti-player-play" id="freeIcon" aria-hidden="true"></i></button>
         <button class="btn-sec" onclick="lapFree()" title="ラップ"><i class="ti ti-flag" aria-hidden="true"></i></button>
         <button class="btn-sec" onclick="resetFree()" title="リセット"><i class="ti ti-refresh" aria-hidden="true"></i></button>
-        <div class="status-bar">
-          <div class="status-dot" id="freeStatusDot"></div>
-        </div>
+        <div class="status-bar"><div class="status-dot" id="freeStatusDot"></div></div>
       </div>
     </div>
 
+    <!-- ポモドーロ設定 -->
     <div id="pomoSettingsLeft" class="content-box">
-      <div class="section-title" style="border:none;margin-bottom:.3rem">ポモドーロタイマー設定</div>
+      <div class="section-title" style="border:none;margin-bottom:.3rem">タイマー設定</div>
       <div class="pomo-settings-dial-wrap">
         <div class="dial-picker-box">
           <span class="dial-label">作業</span>
@@ -446,7 +275,7 @@
           <span class="dial-label">長休憩</span>
           <select id="longMin" class="dial-select" onchange="updatePomoSettings()"></select>
         </div>
-        <div class="dial-picker-box" style="flex: 1.2;">
+        <div class="dial-picker-box" style="flex:1.2">
           <span class="dial-label">セット数</span>
           <div class="counter-box">
             <button class="counter-btn" onclick="adjustSetCount(-1)">−</button>
@@ -456,569 +285,304 @@
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- ナローモード: BGM非表示時にミニ再生状況バナー -->
-    <div class="narrow-banner" id="narrowBanner">
-      <i class="ti ti-disc nb-icon" id="narrowBannerIcon" aria-hidden="true"></i>
-      <span class="nb-text" id="narrowBannerText">BGMを選択してください（フル画面で表示）</span>
-      <button class="nb-stop" onclick="syncYouTube('pause')" title="BGMを停止">停止</button>
+  <!-- ===== 中央カラム: タスク ===== -->
+  <div class="col-mid">
+    <div>
+      <div class="total-label" style="margin-bottom:.4rem">タスク / やることリスト</div>
     </div>
 
-    <div class="content-box task-container">
-      <div class="section-title">タスク / やることリスト</div>
+    <div class="task-container">
       <div class="task-list" id="taskList">
         <div style="font-size:12px;color:var(--muted)">タスクがありません</div>
       </div>
       <div class="input-row">
-        <input type="text" id="taskInput" placeholder="新しいタスクを入力..." onkeypress="if(event.key==='Enter')addTask()" />
+        <input type="text" id="taskInput" placeholder="新しいタスクを入力..." onkeypress="if(event.key==='Enter')addTask()"/>
         <button onclick="addTask()">追加</button>
       </div>
     </div>
-  </div>
 
-  <div class="right">
-    <div class="right-bgm-section content-box" style="flex-shrink:0;">
-
-      <!-- 折りたたみヘッダー -->
-      <div class="bgm-header" onclick="toggleBgmSection()">
-        <div class="section-title" style="border:none;margin:0;padding:0">BGM / 作業音楽</div>
-        <button class="bgm-toggle-btn" id="bgmToggleBtn" aria-label="BGMセクションを開閉">
-          <i class="ti ti-chevron-down" aria-hidden="true"></i>
-          <span id="bgmToggleLabel">表示</span>
-        </button>
-      </div>
-
-      <!-- 折りたたみ中に表示するコンパクト再生状況 -->
-      <div class="now-playing-compact" id="nowPlayingCompact">
-        <i class="ti ti-disc" style="color:var(--accent);font-size:13px;" aria-hidden="true"></i>
-        <span class="np-title" id="nowPlayingCompactTitle">動画が再生されていません</span>
-        <button class="nb-stop" onclick="syncYouTube('pause');event.stopPropagation();" title="停止" style="font-size:10px;padding:2px 7px;">停止</button>
-      </div>
-
-      <!-- 折りたたみボディ（デフォルト非表示） -->
-      <div class="bgm-body" id="bgmBody">
-        <div class="yt-wrap" id="ytWrap">
-          <div class="yt-placeholder" id="ytPlaceholder">
-            <i class="ti ti-music" style="font-size:28px;color:var(--border)" aria-hidden="true"></i>
-            <span>URLを追加して選択してください</span>
-          </div>
-          <div id="ytPlayerContainer" style="display:none;width:100%;height:100%">
-            <div id="ytPlayer"></div>
-          </div>
-        </div>
-
-        <div class="now-playing-box">
-          <i class="ti ti-disc" style="color:var(--accent)" aria-hidden="true"></i>
-          <span class="now-playing-title" id="nowPlayingTitle">動画が再生されていません</span>
-          <button class="btn-pip" id="pipBtn" onclick="togglePiP()" title="ピクチャ・イン・ピクチャ">
-            <i class="ti ti-picture-in-picture" aria-hidden="true"></i> PiP
-          </button>
-        </div>
-
-        <div class="content-box" style="overflow:hidden">
-          <div class="section-title" style="border:none">カスタムお気に入り</div>
-          <div class="playlist-list" id="customList">
-            <div style="font-size:11px;color:var(--muted)">URLを追加してください</div>
-          </div>
-          <div class="input-row">
-            <input type="text" id="urlInput" placeholder="YouTube 動画 / 再生リストのURL" />
-            <button onclick="addCustom()" id="addBtn">追加</button>
-          </div>
-        </div>
-      </div><!-- /bgm-body -->
-    </div><!-- /right-bgm-section -->
-
-    <div class="content-box" style="flex:1">
+    <!-- セッション記録（中央下） -->
+    <div class="content-box" style="flex-shrink:0;max-height:140px">
       <div class="section-title" style="border:none">セッション記録</div>
       <div class="log-list" id="logList">
-        <div style="font-size:11px;color:var(--muted);">まだ記録がありません</div>
+        <div style="font-size:11px;color:var(--muted)">まだ記録がありません</div>
       </div>
     </div>
   </div>
-</div>
+
+  <!-- ===== 右カラム: YouTube ===== -->
+  <div class="col-right">
+
+    <!-- 動画エリア -->
+    <div class="yt-section">
+      <div class="yt-header">
+        <div class="section-title" style="border:none;margin:0;padding:0">BGM / 作業音楽</div>
+        <button class="btn-pip" id="pipBtn" onclick="togglePiP()" title="ピクチャ・イン・ピクチャ">
+          <i class="ti ti-picture-in-picture" aria-hidden="true"></i> PiP
+        </button>
+      </div>
+
+      <div class="yt-wrap" id="ytWrap">
+        <div class="yt-placeholder" id="ytPlaceholder">
+          <i class="ti ti-music" style="font-size:26px;color:var(--border)" aria-hidden="true"></i>
+          <span>下のリストから動画を選択</span>
+        </div>
+        <div id="ytPlayerContainer" style="display:none;width:100%;height:100%">
+          <div id="ytPlayer"></div>
+        </div>
+      </div>
+
+      <div class="now-playing-bar">
+        <i class="ti ti-disc" style="color:var(--accent);font-size:13px" aria-hidden="true"></i>
+        <span class="now-playing-title" id="nowPlayingTitle">動画が再生されていません</span>
+      </div>
+    </div>
+
+    <!-- プレイリスト追加＋記録 -->
+    <div class="right-bottom">
+      <div>
+        <div class="section-title">カスタムお気に入り</div>
+        <div class="playlist-list" id="customList">
+          <div style="font-size:11px;color:var(--muted)">URLを追加してください</div>
+        </div>
+        <div class="input-row">
+          <input type="text" id="urlInput" placeholder="YouTube 動画 / 再生リストのURL"/>
+          <button onclick="addCustom()">追加</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /col-right -->
+</div><!-- /app -->
 
 <script>
+/* ===== State ===== */
 let currentPlaying=null;
-let customPlaylists= JSON.parse(localStorage.getItem('study_space_custom_playlists')) || [];
-let tasks = JSON.parse(localStorage.getItem('study_space_tasks')) || [];
+let customPlaylists=JSON.parse(localStorage.getItem('study_space_custom_playlists'))||[];
+let tasks=JSON.parse(localStorage.getItem('study_space_tasks'))||[];
+let player=null,titleCheckInterval=null;
+let mode='pomodoro';
+let freeRunning=false,freeSec=0,freeInterval=null;
+let pomoRunning=false,pomoSec=0,pomoInterval=null;
+let pomoPhase='work',pomoSet=0;
+let workSec=25*60,shortSec=5*60,longSec=15*60,totalSets=4;
+let totalStudySec=0,totalInterval=null;
+let logs=[];
 
-let player=null;
-let titleCheckInterval=null;
-
-// 🎛️ ダイヤル用の選択肢を「5分刻み」で自動生成する関数
-function initDialOptions() {
-  const workSelect = document.getElementById('workMin');
-  const shortSelect = document.getElementById('shortMin');
-  const longSelect = document.getElementById('longMin');
-
-  workSelect.innerHTML = '';
-  shortSelect.innerHTML = '';
-  longSelect.innerHTML = '';
-
-  // 作業時間・長休憩：5分〜60分まで5分刻み
-  for(let i=5; i<=60; i+=5) {
-    workSelect.options.add(new Option(i + '分', i));
-    longSelect.options.add(new Option(i + '分', i));
-  }
-  // 短休憩：5分〜30分まで5分刻み
-  for(let i=5; i<=30; i+=5) {
-    shortSelect.options.add(new Option(i + '分', i));
-  }
-
-  // デフォルト値をセット
-  workSelect.value = 25;
-  shortSelect.value = 5;
-  longSelect.value = 15;
+/* ===== Dial init ===== */
+function initDialOptions(){
+  const w=document.getElementById('workMin'),s=document.getElementById('shortMin'),l=document.getElementById('longMin');
+  w.innerHTML=s.innerHTML=l.innerHTML='';
+  for(let i=5;i<=60;i+=5){w.options.add(new Option(i+'分',i));l.options.add(new Option(i+'分',i));}
+  for(let i=5;i<=30;i+=5){s.options.add(new Option(i+'分',i));}
+  w.value=25;s.value=5;l.value=15;
 }
 
-/* 📝 TASK LIST FUNCTIONS */
-function renderTasks() {
-  const el = document.getElementById('taskList');
-  if (!tasks.length) {
-    el.innerHTML = '<div style="font-size:12px;color:var(--muted)">タスクがありません</div>';
-    return;
-  }
-  el.innerHTML = tasks.map((t, i) => `
-    <div class="task-item ${t.completed ? 'completed' : ''}">
-      <div class="task-checkbox" onclick="toggleTask(${i})">
-        <i class="ti ti-check" aria-hidden="true"></i>
-      </div>
+/* ===== Tasks ===== */
+function renderTasks(){
+  const el=document.getElementById('taskList');
+  if(!tasks.length){el.innerHTML='<div style="font-size:12px;color:var(--muted)">タスクがありません</div>';return}
+  el.innerHTML=tasks.map((t,i)=>`
+    <div class="task-item ${t.completed?'completed':''}">
+      <div class="task-checkbox" onclick="toggleTask(${i})"><i class="ti ti-check" aria-hidden="true"></i></div>
       <div class="task-text" onclick="toggleTask(${i})">${t.text}</div>
-      <button class="btn-delete" onclick="deleteTask(${i})" title="削除">
-        <i class="ti ti-trash" aria-hidden="true"></i>
-      </button>
+      <button class="btn-delete" onclick="deleteTask(${i})" title="削除"><i class="ti ti-trash" aria-hidden="true"></i></button>
     </div>`).join('');
 }
+function addTask(){
+  const inp=document.getElementById('taskInput'),text=inp.value.trim();
+  if(!text)return;
+  tasks.push({text,completed:false});
+  localStorage.setItem('study_space_tasks',JSON.stringify(tasks));
+  inp.value='';renderTasks();
+}
+function toggleTask(i){tasks[i].completed=!tasks[i].completed;localStorage.setItem('study_space_tasks',JSON.stringify(tasks));renderTasks();}
+function deleteTask(i){tasks.splice(i,1);localStorage.setItem('study_space_tasks',JSON.stringify(tasks));renderTasks();}
 
-function addTask() {
-  const input = document.getElementById('taskInput');
-  const text = input.value.trim();
-  if (!text) return;
-  tasks.push({ text: text, completed: false });
-  localStorage.setItem('study_space_tasks', JSON.stringify(tasks));
-  input.value = '';
-  renderTasks();
+/* ===== YouTube ===== */
+function parseYouTubeUrl(url){
+  const listMatch=url.match(/[?&]list=([^&]+)/);
+  const vMatch=url.match(/[?&]v=([^&]+)/);
+  if(listMatch)return{type:'playlist',id:listMatch[1],videoId:vMatch?vMatch[1]:null};
+  if(vMatch)return{type:'video',id:vMatch[1]};
+  const short=url.match(/youtu\.be\/([^?&]+)/);
+  if(short)return{type:'video',id:short[1]};
+  const live=url.match(/youtube\.com\/live\/([^?&]+)/);
+  if(live)return{type:'video',id:live[1]};
+  return null;
 }
 
-function toggleTask(idx) {
-  tasks[idx].completed = !tasks[idx].completed;
-  localStorage.setItem('study_space_tasks', JSON.stringify(tasks));
-  renderTasks();
-}
-
-function deleteTask(idx) {
-  tasks.splice(idx, 1);
-  localStorage.setItem('study_space_tasks', JSON.stringify(tasks));
-  renderTasks();
-}
-
-/* 🎵 PLAYLIST / VIDEO FUNCTIONS */
 function renderCustom(){
   const el=document.getElementById('customList');
   if(!customPlaylists.length){el.innerHTML='<div style="font-size:11px;color:var(--muted)">URLを追加してください</div>';return}
   el.innerHTML=customPlaylists.map((p,i)=>`
-    <div class="playlist-item ${currentPlaying===i?'playing':''}" onclick="event.target.closest('.btn-delete') ? null : playPlaylist(${i})">
+    <div class="playlist-item ${currentPlaying===i?'playing':''}" onclick="event.target.closest('.btn-delete')?null:playPlaylist(${i})">
       <div class="playlist-name" id="playlist-name-${i}">${p.name||'カスタムリンク'}</div>
-      ${currentPlaying===i?'<span class="playlist-badge" style="margin-right:4px">選択中</span>':''}
-      <button class="btn-delete" onclick="deleteCustom(${i}); event.stopPropagation();" title="削除">
-        <i class="ti ti-trash" aria-hidden="true"></i>
-      </button>
+      ${currentPlaying===i?'<span class="playlist-badge">再生中</span>':''}
+      <button class="btn-delete" onclick="deleteCustom(${i});event.stopPropagation();" title="削除"><i class="ti ti-trash" aria-hidden="true"></i></button>
     </div>`).join('');
 }
 
-// URLからIDと種類(動画 / 再生リスト / ライブ)を抽出
-function parseYouTubeUrl(url) {
-  // 再生リスト（動画IDが付いていても再生リスト優先）
-  const listMatch = url.match(/[?&]list=([^&]+)/);
-  const videoWithList = url.match(/[?&]v=([^&]+)/);
-  if (listMatch) {
-    // 動画IDも同時にある場合は両方返す（再生リストを動画から開始できる）
-    return { type: 'playlist', id: listMatch[1], videoId: videoWithList ? videoWithList[1] : null };
-  }
-
-  // 通常動画 ?v=
-  if (videoWithList) return { type: 'video', id: videoWithList[1] };
-
-  // 短縮URL youtu.be/XXXX
-  const shortMatch = url.match(/youtu\.be\/([^?&]+)/);
-  if (shortMatch) return { type: 'video', id: shortMatch[1] };
-
-  // ライブURL /live/XXXX
-  const liveMatch = url.match(/youtube\.com\/live\/([^?&]+)/);
-  if (liveMatch) return { type: 'video', id: liveMatch[1] };
-
-  return null;
-}
-
 function playPlaylist(idx){
-  const media = parseYouTubeUrl(customPlaylists[idx].url);
+  const media=parseYouTubeUrl(customPlaylists[idx].url);
   if(!media){alert('有効なYouTubeのURLを入力してください');return}
-  
   currentPlaying=idx;
-  document.getElementById('nowPlayingTitle').textContent = "読み込み中...";
-  syncCompactTitle("読み込み中...");
-
-  const container=document.getElementById('ytPlayerContainer');
-  const ph=document.getElementById('ytPlaceholder');
-  container.style.display='block';
-  ph.style.display='none';
-
+  document.getElementById('nowPlayingTitle').textContent='読み込み中...';
+  const container=document.getElementById('ytPlayerContainer'),ph=document.getElementById('ytPlaceholder');
+  container.style.display='block';ph.style.display='none';
   clearInterval(titleCheckInterval);
-  if(player) { try { player.destroy(); } catch(e){} player = null; }
-  container.innerHTML = '<div id="ytPlayer"></div>';
-
-  let playerVars = {
-    autoplay: 1,
-    playsinline: 1,
-  };
-
-  let initVideoId = undefined;
-
-  if (media.type === 'playlist') {
-    playerVars.listType = 'playlist';
-    playerVars.list = media.id;
-    // 再生リストは videoId を空にしてはいけない → 先頭動画IDがあれば渡す、なければダミー不要で list だけ渡す
-    // YT IFrame API は videoId 未指定でも list があれば先頭から再生する
-    if (media.videoId) initVideoId = media.videoId;
-  } else {
-    initVideoId = media.id;
-  }
-
-  // プレイヤー生成
-  const playerConfig = {
-    width: '100%',
-    height: '100%',
-    playerVars: playerVars,
-    events: {
-      'onReady': (event) => {
-        event.target.playVideo();
-        startTitleMonitor();
-        // PiP を最初から許可しておく（YouTubeプレーヤーの右下メニューでPiP可能になる）
-        ensurePiPAllowed();
-      },
-      'onStateChange': (event) => {
-        updateCurrentVideoTitle();
-      },
-      'onError': (event) => {
-        // エラーコード一覧: 2=不正ID, 5=HTML5非対応, 100=非公開/削除, 101/150=埋め込み禁止
-        const codes = {2:'不正なIDです',5:'HTML5プレーヤーエラー',100:'動画が見つかりません（非公開・削除済み）',101:'この動画は埋め込み再生が許可されていません',150:'この動画は埋め込み再生が許可されていません'};
-        const msg = codes[event.data] || `エラー (コード: ${event.data})`;
-        document.getElementById('nowPlayingTitle').textContent = `⚠️ ${msg}`;
-        syncCompactTitle(`⚠️ ${msg}`);
-      }
+  if(player){try{player.destroy()}catch(e){}player=null;}
+  container.innerHTML='<div id="ytPlayer"></div>';
+  let pv={autoplay:1,playsinline:1},vid=undefined;
+  if(media.type==='playlist'){pv.listType='playlist';pv.list=media.id;if(media.videoId)vid=media.videoId;}
+  else{vid=media.id;}
+  const cfg={width:'100%',height:'100%',playerVars:pv,events:{
+    onReady:e=>{e.target.playVideo();startTitleMonitor();ensurePiPAllowed();},
+    onStateChange:()=>updateCurrentVideoTitle(),
+    onError:e=>{
+      const codes={2:'不正なID',5:'HTML5エラー',100:'非公開/削除済み',101:'埋め込み禁止',150:'埋め込み禁止'};
+      const msg=codes[e.data]||`エラー(${e.data})`;
+      document.getElementById('nowPlayingTitle').textContent='⚠️ '+msg;
     }
-  };
-
-  // videoId があれば渡す（再生リストでも先頭動画IDがある場合は渡す）
-  if (initVideoId) playerConfig.videoId = initVideoId;
-
-  player = new YT.Player('ytPlayer', playerConfig);
-
+  }};
+  if(vid)cfg.videoId=vid;
+  player=new YT.Player('ytPlayer',cfg);
   renderCustom();
 }
 
-// 動画タイトルをoEmbedで取得（認証不要・CORS対応）
-async function fetchVideoTitle(videoId) {
-  try {
-    const res = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data.title || null;
-  } catch(e) { return null; }
+async function fetchVideoTitle(id){
+  try{const r=await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`);if(!r.ok)return null;const d=await r.json();return d.title||null;}catch{return null;}
+}
+async function fetchPlaylistTitle(id){
+  try{const r=await fetch(`https://noembed.com/embed?url=https://www.youtube.com/playlist?list=${id}`);if(!r.ok)return null;const d=await r.json();return(d.title&&!d.error)?d.title:null;}catch{return null;}
 }
 
-// 再生リスト名をoEmbedで取得（再生リストのoEmbedは先頭動画タイトルが返るが名称の代替として使用）
-// YouTube Data API（キー不要）はCORSで弾かれるため、
-// 追加時にplaylistIdからoEmbed経由で名前を取る
-async function fetchPlaylistTitle(listId) {
-  // oEmbedは再生リストを直接サポートしないため、
-  // noembed.com経由でプレイリストURLを試みる
-  try {
-    const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/playlist?list=${listId}`);
-    if (!res.ok) return null;
-    const data = await res.json();
-    // noembedはタイトルを返すことがある
-    if (data.title && !data.error) return data.title;
-    return null;
-  } catch(e) { return null; }
-}
-
-function updateCurrentVideoTitle() {
-  if (player && typeof player.getVideoData === 'function') {
-    const videoData = player.getVideoData();
-    if (videoData && videoData.title) {
-      // 現在再生中の動画タイトルをnowPlayingに表示
-      document.getElementById('nowPlayingTitle').textContent = videoData.title;
-      syncCompactTitle(videoData.title);
-
-      // リスト側は「動画」タイプの場合のみこれで更新（再生リストは別途fetchで取得済）
-      if (currentPlaying !== null && customPlaylists[currentPlaying]) {
-        const entry = customPlaylists[currentPlaying];
-        const media = parseYouTubeUrl(entry.url);
-        if (media && media.type === 'video' && entry.name.startsWith("お気に入り")) {
-          entry.name = videoData.title;
-          localStorage.setItem('study_space_custom_playlists', JSON.stringify(customPlaylists));
-          const nameEl = document.getElementById(`playlist-name-${currentPlaying}`);
-          if (nameEl) nameEl.textContent = videoData.title;
+function updateCurrentVideoTitle(){
+  if(player&&typeof player.getVideoData==='function'){
+    const d=player.getVideoData();
+    if(d&&d.title){
+      document.getElementById('nowPlayingTitle').textContent=d.title;
+      if(currentPlaying!==null&&customPlaylists[currentPlaying]){
+        const e=customPlaylists[currentPlaying];
+        const m=parseYouTubeUrl(e.url);
+        if(m&&m.type==='video'&&e.name.startsWith('お気に入り')){
+          e.name=d.title;localStorage.setItem('study_space_custom_playlists',JSON.stringify(customPlaylists));
+          const el=document.getElementById(`playlist-name-${currentPlaying}`);if(el)el.textContent=d.title;
         }
       }
     }
   }
 }
+function startTitleMonitor(){clearInterval(titleCheckInterval);titleCheckInterval=setInterval(updateCurrentVideoTitle,1500);}
 
-function startTitleMonitor() {
-  clearInterval(titleCheckInterval);
-  titleCheckInterval = setInterval(updateCurrentVideoTitle, 1500);
-}
-
-// URL追加時にタイトルを非同期取得してリスト名を更新
-async function resolveTitle(idx) {
-  const entry = customPlaylists[idx];
-  if (!entry || !entry.name.startsWith("お気に入り")) return;
-  const media = parseYouTubeUrl(entry.url);
-  if (!media) return;
-
-  let title = null;
-  if (media.type === 'video') {
-    title = await fetchVideoTitle(media.id);
-  } else if (media.type === 'playlist') {
-    title = await fetchPlaylistTitle(media.id);
-  }
-
-  if (title && customPlaylists[idx]) {
-    customPlaylists[idx].name = title;
-    localStorage.setItem('study_space_custom_playlists', JSON.stringify(customPlaylists));
-    const nameEl = document.getElementById(`playlist-name-${idx}`);
-    if (nameEl) nameEl.textContent = title;
+async function resolveTitle(idx){
+  const e=customPlaylists[idx];if(!e||!e.name.startsWith('お気に入り'))return;
+  const m=parseYouTubeUrl(e.url);if(!m)return;
+  let title=m.type==='video'?await fetchVideoTitle(m.id):await fetchPlaylistTitle(m.id);
+  if(title&&customPlaylists[idx]){
+    customPlaylists[idx].name=title;localStorage.setItem('study_space_custom_playlists',JSON.stringify(customPlaylists));
+    const el=document.getElementById(`playlist-name-${idx}`);if(el)el.textContent=title;
   }
 }
 
 function addCustom(){
   const v=document.getElementById('urlInput').value.trim();
   if(!v)return;
-  if(!v.includes('youtube.com')&&!v.includes('youtu.be')){alert('YouTubeの動画または再生リストのURLを入力してください');return}
-  
-  const media = parseYouTubeUrl(v);
-  if(!media) { alert('有効な動画IDまたは再生リストIDが見つかりません'); return; }
-
-  const isLive = v.includes('/live/');
-  const typeLabel = media.type === 'playlist' ? 'プレイリスト' : (isLive ? 'ライブ' : '動画');
-  const labelName = `お気に入り${typeLabel} ` + (customPlaylists.length + 1);
-
-  customPlaylists.push({url: v, name: labelName});
-  localStorage.setItem('study_space_custom_playlists', JSON.stringify(customPlaylists));
-  
+  if(!v.includes('youtube.com')&&!v.includes('youtu.be')){alert('YouTubeのURLを入力してください');return}
+  const m=parseYouTubeUrl(v);if(!m){alert('有効なIDが見つかりません');return}
+  const isLive=v.includes('/live/');
+  const label=m.type==='playlist'?'プレイリスト':(isLive?'ライブ':'動画');
+  customPlaylists.push({url:v,name:`お気に入り${label} `+(customPlaylists.length+1)});
+  localStorage.setItem('study_space_custom_playlists',JSON.stringify(customPlaylists));
   document.getElementById('urlInput').value='';
-  renderCustom();
-
-  // 追加直後にタイトルを非同期取得してリスト名を更新
-  const newIdx = customPlaylists.length - 1;
-  resolveTitle(newIdx);
+  renderCustom();resolveTitle(customPlaylists.length-1);
 }
 
-function deleteCustom(idx) {
-  if(currentPlaying === idx) {
-    if(player) { player.destroy(); clearInterval(titleCheckInterval); }
+function deleteCustom(idx){
+  if(currentPlaying===idx){
+    if(player){player.destroy();clearInterval(titleCheckInterval);}
     document.getElementById('ytPlayerContainer').style.display='none';
     document.getElementById('ytPlaceholder').style.display='flex';
-    document.getElementById('nowPlayingTitle').textContent = "動画が再生されていません";
-    syncCompactTitle("動画が再生されていません");
-    currentPlaying = null;
-  } else if (currentPlaying > idx) {
-    currentPlaying--;
-  }
-  customPlaylists.splice(idx, 1);
-  localStorage.setItem('study_space_custom_playlists', JSON.stringify(customPlaylists));
+    document.getElementById('nowPlayingTitle').textContent='動画が再生されていません';
+    currentPlaying=null;
+  }else if(currentPlaying>idx)currentPlaying--;
+  customPlaylists.splice(idx,1);localStorage.setItem('study_space_custom_playlists',JSON.stringify(customPlaylists));
   renderCustom();
 }
 
-function syncYouTube(action) {
-  if (!player || typeof player.playVideo !== 'function') return;
-  try {
-    if (action === 'play') { player.playVideo(); }
-    else if (action === 'pause') { player.pauseVideo(); }
-  } catch(e) { console.log(e); }
+function syncYouTube(a){
+  if(!player||typeof player.playVideo!=='function')return;
+  try{if(a==='play')player.playVideo();else if(a==='pause')player.pauseVideo();}catch(e){}
 }
 
-/* ===== BGMセクション 折りたたみ ===== */
-let bgmOpen = false; // デフォルト非表示
-
-function toggleBgmSection() {
-  bgmOpen = !bgmOpen;
-  const body = document.getElementById('bgmBody');
-  const btn = document.getElementById('bgmToggleBtn');
-  const label = document.getElementById('bgmToggleLabel');
-  const compact = document.getElementById('nowPlayingCompact');
-  if (bgmOpen) {
-    body.classList.add('open');
-    btn.classList.add('open');
-    label.textContent = '隠す';
-    compact.classList.add('hidden');
-  } else {
-    body.classList.remove('open');
-    btn.classList.remove('open');
-    label.textContent = '表示';
-    compact.classList.remove('hidden');
-  }
-}
-
-/* BGMタイトルをコンパクト表示にも同期 */
-function syncCompactTitle(title) {
-  const el = document.getElementById('nowPlayingCompactTitle');
-  if (el) el.textContent = title || '動画が再生されていません';
-}
-
-/* ===== ナローバナー更新 ===== */
-function updateNarrowBanner() {
-  const banner = document.getElementById('narrowBanner');
-  const bannerText = document.getElementById('narrowBannerText');
-  const bannerIcon = document.getElementById('narrowBannerIcon');
-  if (!banner) return;
-  const title = document.getElementById('nowPlayingTitle').textContent;
-  if (title && title !== '動画が再生されていません') {
-    bannerText.textContent = '🎵 ' + title;
-    bannerIcon.className = 'ti ti-disc nb-icon';
-  } else {
-    bannerText.textContent = 'BGMを選択してください（フル画面で表示）';
-    bannerIcon.className = 'ti ti-music nb-icon';
-  }
-  syncCompactTitle(title);
-}
-
-/* ===== Media Session API: ロック画面・コントロールセンターから操作可能に ===== */
-function setupMediaSession(title) {
-  if (!('mediaSession' in navigator)) return;
-  navigator.mediaSession.metadata = new MediaMetadata({
-    title: title || 'Study Timer',
-    artist: 'Study Space',
-    album: 'タイマー実行中',
-  });
-  navigator.mediaSession.setActionHandler('play', () => {
-    if (mode === 'pomodoro' && !pomoRunning) togglePomo();
-    else if (mode === 'free' && !freeRunning) toggleFree();
-  });
-  navigator.mediaSession.setActionHandler('pause', () => {
-    if (mode === 'pomodoro' && pomoRunning) togglePomo();
-    else if (mode === 'free' && freeRunning) toggleFree();
-  });
-  navigator.mediaSession.setActionHandler('stop', () => {
-    if (mode === 'pomodoro') resetPomo();
-    else resetFree();
-  });
-}
-
-function setMediaSessionState(playing) {
-  if (!('mediaSession' in navigator)) return;
-  navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
-}
-
-/* ===== ピクチャ・イン・ピクチャ ===== */
-// YouTube IFrame はクロスオリジンのため JS から直接 video 要素を取得できない。
-// → YT Player API が生成する iframe に allow="picture-in-picture" を付与することで
-//   YouTube プレーヤー自身の PiP ボタン（右下メニュー）が有効になる。
-// → タイマーON/OFFの syncYouTube 呼び出しは PiP中も有効（プレーヤーAPIはPiP中も動作する）。
-
-function ensurePiPAllowed() {
-  const iframeEl = document.querySelector('#ytPlayer iframe');
-  if (!iframeEl) return false;
-  const allow = iframeEl.getAttribute('allow') || '';
-  if (!allow.includes('picture-in-picture')) {
-    iframeEl.setAttribute('allow', allow + (allow ? '; ' : '') + 'picture-in-picture');
-  }
+/* PiP */
+function ensurePiPAllowed(){
+  const f=document.querySelector('#ytPlayer iframe');if(!f)return false;
+  const a=f.getAttribute('allow')||'';
+  if(!a.includes('picture-in-picture'))f.setAttribute('allow',a+(a?'; ':'')+'picture-in-picture');
   return true;
 }
-
-function togglePiP() {
-  const ok = ensurePiPAllowed();
-  const btn = document.getElementById('pipBtn');
-  if (!ok) {
-    alert('先に動画・再生リストを選択して再生してください。\n再生後にもう一度PiPボタンを押すと有効になります。');
-    return;
-  }
+function togglePiP(){
+  const ok=ensurePiPAllowed();const btn=document.getElementById('pipBtn');
+  if(!ok){alert('先に動画を選択して再生してください');return}
   btn.classList.toggle('active');
-  const isActive = btn.classList.contains('active');
-  // PiP の実際の起動は YouTube プレーヤーの右下「...」→「ピクチャ・イン・ピクチャ」
-  // または iPadOS のホームジェスチャーで自動起動する
-  // ここでは allow 属性を付与して「PiP許可済み」状態を示すトグルとして機能させる
-  if (isActive) {
-    btn.title = 'PiP許可済み（動画右下メニューまたはiPadのスワイプでPiP起動）';
-  } else {
-    btn.title = 'ピクチャ・イン・ピクチャを有効化';
-  }
+  btn.title=btn.classList.contains('active')?'PiP許可済み（動画右下メニューまたはiPadスワイプで起動）':'ピクチャ・イン・ピクチャ';
 }
+document.addEventListener('enterpictureinpicture',()=>{const b=document.getElementById('pipBtn');if(b)b.classList.add('active');});
+document.addEventListener('leavepictureinpicture',()=>{const b=document.getElementById('pipBtn');if(b)b.classList.remove('active');});
 
-// ブラウザレベルのPiP状態変化があればボタンUIに反映
-document.addEventListener('enterpictureinpicture', () => {
-  const btn = document.getElementById('pipBtn');
-  if (btn) btn.classList.add('active');
-});
-document.addEventListener('leavepictureinpicture', () => {
-  const btn = document.getElementById('pipBtn');
-  if (btn) btn.classList.remove('active');
-});
-
-/* Timer state */
-let mode='pomodoro';
-let freeRunning=false,freeSec=0,freeInterval=null;
-let pomoRunning=false;
-let pomoSec=0,pomoInterval=null;
-let pomoPhase='work'; 
-let pomoSet=0;
-let workSec=25*60,shortSec=5*60,longSec=15*60,totalSets=4;
-let totalStudySec=0,totalInterval=null;
-let logs=[];
-
-function setMode(m){
-  mode=m;
-  document.getElementById('tabPomo').classList.toggle('active', m==='pomodoro');
-  document.getElementById('tabFree').classList.toggle('active', m==='free');
-  
-  document.getElementById('freeMode').style.display=m==='free'?'flex':'none';
-  document.getElementById('pomoMode').style.display=m==='pomodoro'?'flex':'none';
-  
-  document.getElementById('pomoSettingsLeft').style.opacity = m==='pomodoro'?'1':'0.4';
+/* Media Session */
+function setupMediaSession(title){
+  if(!('mediaSession' in navigator))return;
+  navigator.mediaSession.metadata=new MediaMetadata({title:title||'Study Timer',artist:'Study Space',album:'タイマー実行中'});
+  navigator.mediaSession.setActionHandler('play',()=>{if(mode==='pomodoro'&&!pomoRunning)togglePomo();else if(mode==='free'&&!freeRunning)toggleFree();});
+  navigator.mediaSession.setActionHandler('pause',()=>{if(mode==='pomodoro'&&pomoRunning)togglePomo();else if(mode==='free'&&freeRunning)toggleFree();});
+  navigator.mediaSession.setActionHandler('stop',()=>{if(mode==='pomodoro')resetPomo();else resetFree();});
 }
+function setMediaSessionState(p){if(!('mediaSession' in navigator))return;navigator.mediaSession.playbackState=p?'playing':'paused';}
 
+/* ===== Timers ===== */
 function fmt(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
 function fmtTotal(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),ss=s%60;return`${String(h).padStart(2,'0')}<span>h</span> ${String(m).padStart(2,'0')}<span>m</span> ${String(ss).padStart(2,'0')}<span>s</span>`}
 
-function startTotal(){if(!totalInterval)totalInterval=setInterval(()=>{totalStudySec++;document.getElementById('totalDisplay').innerHTML=fmtTotal(totalStudySec)},1000)}
-function stopTotal(){if(!freeRunning&&!pomoRunning){clearInterval(totalInterval);totalInterval=null}}
+function startTotal(){if(!totalInterval)totalInterval=setInterval(()=>{totalStudySec++;document.getElementById('totalDisplay').innerHTML=fmtTotal(totalStudySec);},1000);}
+function stopTotal(){if(!freeRunning&&!pomoRunning){clearInterval(totalInterval);totalInterval=null;}}
 
-/* FREE MODE */
+function setMode(m){
+  mode=m;
+  document.getElementById('tabPomo').classList.toggle('active',m==='pomodoro');
+  document.getElementById('tabFree').classList.toggle('active',m==='free');
+  document.getElementById('freeMode').style.display=m==='free'?'flex':'none';
+  document.getElementById('pomoMode').style.display=m==='pomodoro'?'flex':'none';
+  document.getElementById('pomoSettingsLeft').style.opacity=m==='pomodoro'?'1':'0.4';
+}
+
+/* Free */
 function toggleFree(){
   if(!freeRunning){
     freeRunning=true;
     document.getElementById('freeIcon').className='ti ti-player-pause';
     document.getElementById('freeStatusDot').className='status-dot running';
     document.getElementById('freeModeLabel').textContent='計測中';
-    freeInterval=setInterval(()=>{freeSec++;updateFreeUI()},1000);
-    startTotal();
-    syncYouTube('play');
-    setupMediaSession(document.getElementById('nowPlayingTitle').textContent);
-    setMediaSessionState(true);
-    updateNarrowBanner();
-  } else {
-    freeRunning=false;
-    clearInterval(freeInterval);
+    freeInterval=setInterval(()=>{freeSec++;updateFreeUI();},1000);
+    startTotal();syncYouTube('play');
+    setupMediaSession(document.getElementById('nowPlayingTitle').textContent);setMediaSessionState(true);
+  }else{
+    freeRunning=false;clearInterval(freeInterval);
     document.getElementById('freeIcon').className='ti ti-player-play';
     document.getElementById('freeStatusDot').className='status-dot paused';
     document.getElementById('freeModeLabel').textContent='一時停止';
-    stopTotal();
-    syncYouTube('pause');
-    setMediaSessionState(false);
-    updateNarrowBanner();
+    stopTotal();syncYouTube('pause');setMediaSessionState(false);
   }
 }
 function updateFreeUI(){
   document.getElementById('freeDisplay').textContent=fmt(freeSec);
-  const pct = (freeSec % 3600) / 3600;
-  document.getElementById('freeRing').style.strokeDashoffset = 502 * pct;
+  document.getElementById('freeRing').style.strokeDashoffset=502*((freeSec%3600)/3600);
 }
 function resetFree(){
-  if(freeRunning)toggleFree();
-  if(freeSec>0){addLog('フリー学習',freeSec)}
-  freeSec=0;
+  if(freeRunning)toggleFree();if(freeSec>0)addLog('フリー学習',freeSec);freeSec=0;
   document.getElementById('freeDisplay').textContent='00:00';
   document.getElementById('freeStatusDot').className='status-dot';
   document.getElementById('freeModeLabel').textContent='待機中';
@@ -1026,88 +590,49 @@ function resetFree(){
   document.getElementById('freeRing').style.strokeDashoffset='0';
   syncYouTube('pause');
 }
-function lapFree(){if(!freeRunning||freeSec===0)return;addLog('ラップ',freeSec)}
+function lapFree(){if(!freeRunning||freeSec===0)return;addLog('ラップ',freeSec);}
 
-/* POMODORO */
+/* Pomodoro */
 function updatePomoSettings(){
   workSec=parseInt(document.getElementById('workMin').value)*60;
   shortSec=parseInt(document.getElementById('shortMin').value)*60;
   longSec=parseInt(document.getElementById('longMin').value)*60;
-  
-  if(!pomoRunning){
-    pomoSec = (pomoPhase==='work') ? workSec : (pomoPhase==='short' ? shortSec : longSec);
-    updatePomoUI();
-  }
+  if(!pomoRunning){pomoSec=pomoPhase==='work'?workSec:pomoPhase==='short'?shortSec:longSec;updatePomoUI();}
   renderDots();
 }
-
-function adjustSetCount(val) {
-  let current = totalSets;
-  current += val;
-  if(current < 2) current = 2;
-  if(current > 8) current = 8;
-  totalSets = current;
-  document.getElementById('setCountVal').textContent = totalSets;
-  renderDots();
-}
-
+function adjustSetCount(v){totalSets=Math.max(2,Math.min(8,totalSets+v));document.getElementById('setCountVal').textContent=totalSets;renderDots();}
 function renderDots(){
   const d=document.getElementById('pomoDots');
-  d.innerHTML=Array.from({length:totalSets},(_,i)=>`<div class="dot ${i<pomoSet?'done':i===pomoSet&&pomoPhase==='work'?'current':''}" id="dot${i}"></div>`).join('');
+  d.innerHTML=Array.from({length:totalSets},(_,i)=>`<div class="dot ${i<pomoSet?'done':i===pomoSet&&pomoPhase==='work'?'current':''}"></div>`).join('');
 }
 function togglePomo(){
   if(!pomoRunning){
-    pomoRunning=true;
-    if(pomoSec===0)pomoSec=workSec;
+    pomoRunning=true;if(pomoSec===0)pomoSec=workSec;
     document.getElementById('pomoIcon').className='ti ti-player-pause';
     document.getElementById('pomoStatusDot').className='status-dot running';
     pomoInterval=setInterval(pomoTick,1000);
-    
-    if(pomoPhase==='work') {
-      startTotal();
-      syncYouTube('play');
-    } else {
-      syncYouTube('pause');
-    }
-    setupMediaSession(document.getElementById('nowPlayingTitle').textContent);
-    setMediaSessionState(pomoPhase==='work');
-    updateNarrowBanner();
-  } else {
+    if(pomoPhase==='work'){startTotal();syncYouTube('play');}else syncYouTube('pause');
+    setupMediaSession(document.getElementById('nowPlayingTitle').textContent);setMediaSessionState(pomoPhase==='work');
+  }else{
     pomoRunning=false;clearInterval(pomoInterval);
     document.getElementById('pomoIcon').className='ti ti-player-play';
     document.getElementById('pomoStatusDot').className='status-dot paused';
-    stopTotal();
-    syncYouTube('pause');
-    setMediaSessionState(false);
-    updateNarrowBanner();
+    stopTotal();syncYouTube('pause');setMediaSessionState(false);
   }
 }
-function pomoTick(){
-  pomoSec--;
-  if(pomoSec<=0){nextPomoPhase();return}
-  updatePomoUI();
-}
+function pomoTick(){pomoSec--;if(pomoSec<=0){nextPomoPhase();return}updatePomoUI();}
 function nextPomoPhase(){
-  clearInterval(pomoInterval);pomoRunning=false;
-  syncYouTube('pause');
-  
+  clearInterval(pomoInterval);pomoRunning=false;syncYouTube('pause');
   if(pomoPhase==='work'){
-    addLog('ポモドーロ #'+(pomoSet+1),workSec);
-    pomoSet++;
-    stopTotal();
-    if(pomoSet>=totalSets){pomoPhase='long';pomoSec=longSec;}
-    else{pomoPhase='short';pomoSec=shortSec;}
-  } else {
-    if(pomoPhase==='long'){pomoSet=0;}
-    pomoPhase='work';pomoSec=workSec;
-  }
+    addLog('ポモドーロ #'+(pomoSet+1),workSec);pomoSet++;stopTotal();
+    if(pomoSet>=totalSets){pomoPhase='long';pomoSec=longSec;}else{pomoPhase='short';pomoSec=shortSec;}
+  }else{if(pomoPhase==='long')pomoSet=0;pomoPhase='work';pomoSec=workSec;}
   renderDots();updatePomoUI();
   document.getElementById('pomoIcon').className='ti ti-player-play';
   document.getElementById('pomoStatusDot').className='status-dot';
 }
 function resetPomo(){
-  if(pomoRunning)togglePomo();
-  pomoSet=0;pomoPhase='work';pomoSec=workSec;
+  if(pomoRunning)togglePomo();pomoSet=0;pomoPhase='work';pomoSec=workSec;
   renderDots();updatePomoUI();
   document.getElementById('pomoStatusDot').className='status-dot';
   document.getElementById('pomoIcon').className='ti ti-player-play';
@@ -1126,28 +651,26 @@ function updatePomoUI(){
   document.getElementById('pomoRingLabel').textContent=rlabels[pomoPhase];
 }
 
+/* Log */
 function addLog(label,sec){
   const now=new Date();const t=now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
   logs.unshift({label,sec,t});
   const el=document.getElementById('logList');
-  el.innerHTML=logs.slice(0,6).map(l=>`
+  el.innerHTML=logs.slice(0,8).map(l=>`
     <div class="log-item">
       <span>${l.label}</span>
       <span class="log-time">${l.t} | ${fmt(l.sec)}</span>
     </div>`).join('');
 }
 
-// Init
+/* Init */
 initDialOptions();
 updatePomoSettings();
 renderCustom();
 renderTasks();
 pomoSec=workSec;updatePomoUI();
 setMode('pomodoro');
-updateNarrowBanner();
-
-// 既存のリスト（localStorage保存済み）の名前が仮のままなら起動時に解決
-customPlaylists.forEach((_, i) => resolveTitle(i));
+customPlaylists.forEach((_,i)=>resolveTitle(i));
 </script>
 </body>
 </html>
