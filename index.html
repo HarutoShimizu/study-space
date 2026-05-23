@@ -568,21 +568,48 @@ function playPlaylist(idx){
   renderCustom();
 }
 
+// 動画タイトルをoEmbedで取得（認証不要・CORS対応）
+async function fetchVideoTitle(videoId) {
+  try {
+    const res = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.title || null;
+  } catch(e) { return null; }
+}
+
+// 再生リスト名をoEmbedで取得（再生リストのoEmbedは先頭動画タイトルが返るが名称の代替として使用）
+// YouTube Data API（キー不要）はCORSで弾かれるため、
+// 追加時にplaylistIdからoEmbed経由で名前を取る
+async function fetchPlaylistTitle(listId) {
+  // oEmbedは再生リストを直接サポートしないため、
+  // noembed.com経由でプレイリストURLを試みる
+  try {
+    const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/playlist?list=${listId}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    // noembedはタイトルを返すことがある
+    if (data.title && !data.error) return data.title;
+    return null;
+  } catch(e) { return null; }
+}
+
 function updateCurrentVideoTitle() {
   if (player && typeof player.getVideoData === 'function') {
     const videoData = player.getVideoData();
     if (videoData && videoData.title) {
-      const realTitle = videoData.title;
-      // 画面上部を本物のタイトルに更新
-      document.getElementById('nowPlayingTitle').textContent = realTitle;
-      
-      // リスト側の表示名が「お気に入り〜」の初期状態なら、本物のタイトルで保存し直す
+      // 現在再生中の動画タイトルをnowPlayingに表示
+      document.getElementById('nowPlayingTitle').textContent = videoData.title;
+
+      // リスト側は「動画」タイプの場合のみこれで更新（再生リストは別途fetchで取得済）
       if (currentPlaying !== null && customPlaylists[currentPlaying]) {
-        if (customPlaylists[currentPlaying].name.startsWith("お気に入り")) {
-          customPlaylists[currentPlaying].name = realTitle;
+        const entry = customPlaylists[currentPlaying];
+        const media = parseYouTubeUrl(entry.url);
+        if (media && media.type === 'video' && entry.name.startsWith("お気に入り")) {
+          entry.name = videoData.title;
           localStorage.setItem('study_space_custom_playlists', JSON.stringify(customPlaylists));
           const nameEl = document.getElementById(`playlist-name-${currentPlaying}`);
-          if (nameEl) nameEl.textContent = realTitle;
+          if (nameEl) nameEl.textContent = videoData.title;
         }
       }
     }
@@ -592,6 +619,28 @@ function updateCurrentVideoTitle() {
 function startTitleMonitor() {
   clearInterval(titleCheckInterval);
   titleCheckInterval = setInterval(updateCurrentVideoTitle, 1500);
+}
+
+// URL追加時にタイトルを非同期取得してリスト名を更新
+async function resolveTitle(idx) {
+  const entry = customPlaylists[idx];
+  if (!entry || !entry.name.startsWith("お気に入り")) return;
+  const media = parseYouTubeUrl(entry.url);
+  if (!media) return;
+
+  let title = null;
+  if (media.type === 'video') {
+    title = await fetchVideoTitle(media.id);
+  } else if (media.type === 'playlist') {
+    title = await fetchPlaylistTitle(media.id);
+  }
+
+  if (title && customPlaylists[idx]) {
+    customPlaylists[idx].name = title;
+    localStorage.setItem('study_space_custom_playlists', JSON.stringify(customPlaylists));
+    const nameEl = document.getElementById(`playlist-name-${idx}`);
+    if (nameEl) nameEl.textContent = title;
+  }
 }
 
 function addCustom(){
@@ -611,6 +660,10 @@ function addCustom(){
   
   document.getElementById('urlInput').value='';
   renderCustom();
+
+  // 追加直後にタイトルを非同期取得してリスト名を更新
+  const newIdx = customPlaylists.length - 1;
+  resolveTitle(newIdx);
 }
 
 function deleteCustom(idx) {
@@ -813,6 +866,9 @@ renderCustom();
 renderTasks();
 pomoSec=workSec;updatePomoUI();
 setMode('pomodoro');
+
+// 既存のリスト（localStorage保存済み）の名前が仮のままなら起動時に解決
+customPlaylists.forEach((_, i) => resolveTitle(i));
 </script>
 </body>
 </html>
