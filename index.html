@@ -19,7 +19,7 @@
       -webkit-tap-highlight-color:transparent;
     }
 
-    /* ===== 3カラム グリッド ===== */
+    /* ===== 常に3カラム固定（Aパターン） ===== */
     .app{
       display:grid;
       grid-template-columns:300px 1fr 340px;
@@ -27,52 +27,39 @@
       overflow:hidden;
     }
 
-    /* タブレット（950px以下）: 左＋右の2カラム、中央をright下に */
-    @media(max-width:1100px){
-      .app{ grid-template-columns:280px 1fr; grid-template-rows:1fr auto; }
-      .col-mid{ grid-column:2; grid-row:1; }
-      .col-right{ grid-column:1/3; grid-row:2; max-height:340px; flex-direction:row; }
-      .yt-section{ flex:1.4; }
-      .right-bottom{ flex:1; }
-    }
+    /* スマホのみ縦積み */
     @media(max-width:700px){
-      body{ overflow:auto; height:auto; }
-      .app{ grid-template-columns:1fr; grid-template-rows:auto; height:auto; }
-      .col-left{ border-right:none; border-bottom:1px solid var(--border); }
-      .col-mid{ grid-column:1; grid-row:2; border-right:none; border-bottom:1px solid var(--border); }
-      .col-right{ grid-column:1; grid-row:3; max-height:none; flex-direction:column; }
+      body{overflow:auto;height:auto;}
+      .app{grid-template-columns:1fr;height:auto;overflow:visible;}
+      .col-left,.col-mid{border-right:none;border-bottom:1px solid var(--border);}
+      .col-right{max-height:none;}
     }
 
-    /* ===== カラム共通 ===== */
+    /* ===== カラム ===== */
     .col-left{
       padding:1.2rem 1rem;
       border-right:1px solid var(--border);
-      display:flex;
-      flex-direction:column;
-      gap:.85rem;
+      display:flex;flex-direction:column;gap:.85rem;
       overflow:hidden;
     }
     .col-mid{
       padding:1.2rem 1rem;
       border-right:1px solid var(--border);
-      display:flex;
-      flex-direction:column;
-      gap:.85rem;
+      display:flex;flex-direction:column;gap:.85rem;
       overflow:hidden;
     }
     .col-right{
       background:var(--surface);
-      display:flex;
-      flex-direction:column;
+      display:flex;flex-direction:column;
       overflow:hidden;
     }
 
-    /* ===== 今日の学習時間 ===== */
+    /* ===== 学習時間 ===== */
     .total-label{font-size:10px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:.15rem}
     .total-time{font-family:'DM Mono',monospace;font-size:2.4rem;font-weight:400;color:var(--text);line-height:1;letter-spacing:-.02em}
     .total-time span{color:var(--muted);font-size:1.3rem}
 
-    /* ===== モードタブ ===== */
+    /* ===== タブ ===== */
     .mode-tabs{display:flex;gap:6px}
     .tab{padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Syne',sans-serif;font-size:11px;cursor:pointer;transition:all .2s}
     .tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
@@ -103,13 +90,11 @@
     .btn-sec{width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
     .btn-sec:hover{border-color:var(--text);color:var(--text)}
 
-    /* ポモドーロドット */
     .pomo-dots{display:flex;gap:4px;margin-top:.4rem}
     .dot{width:6px;height:6px;border-radius:50%;background:var(--border);transition:background .3s}
     .dot.done{background:var(--accent)}
     .dot.current{background:var(--warn)}
 
-    /* ステータス */
     .status-bar{display:flex;align-items:center;gap:5px;margin-top:.3rem}
     .status-dot{width:6px;height:6px;border-radius:50%;background:var(--muted);flex-shrink:0}
     .status-dot.running{background:var(--success);box-shadow:0 0 0 2px rgba(78,205,196,.2)}
@@ -155,7 +140,7 @@
     .log-item:last-child{border-bottom:none}
     .log-time{font-family:'DM Mono',monospace;color:var(--accent);font-size:10px}
 
-    /* ===== 右カラム: YouTube エリア ===== */
+    /* ===== 右カラム YouTube ===== */
     .yt-section{
       display:flex;flex-direction:column;gap:.7rem;
       padding:1rem;
@@ -163,14 +148,14 @@
       flex-shrink:0;
     }
     .yt-header{display:flex;align-items:center;justify-content:space-between}
-    .yt-wrap{border-radius:10px;overflow:hidden;aspect-ratio:16/9;background:var(--surface2);border:1px solid var(--border);position:relative}
+    .yt-wrap{border-radius:10px;overflow:hidden;aspect-ratio:16/9;background:var(--surface2);border:1px solid var(--border)}
     .yt-wrap iframe{width:100%;height:100%;border:none}
     .yt-placeholder{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.3rem;color:var(--muted);font-size:12px}
     .now-playing-bar{background:rgba(124,106,255,.06);border:1px dashed var(--border);border-radius:8px;padding:6px 10px;display:flex;align-items:center;gap:6px;font-size:11px}
     .now-playing-title{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;color:var(--text)}
 
     /* プレイリスト */
-    .playlist-list{display:flex;flex-direction:column;gap:5px;overflow-y:auto;max-height:130px}
+    .playlist-list{display:flex;flex-direction:column;gap:5px;overflow-y:auto;max-height:160px}
     .playlist-item{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);cursor:pointer;transition:all .2s}
     .playlist-item:hover{border-color:var(--accent);background:rgba(124,106,255,.08)}
     .playlist-item.playing{border-color:var(--accent2);background:rgba(78,205,196,.08)}
@@ -182,15 +167,8 @@
     .btn-pip:hover{border-color:var(--accent);color:var(--accent)}
     .btn-pip.active{border-color:var(--accent2);color:var(--accent2);background:rgba(78,205,196,.08)}
 
-    /* ===== 右カラム下部: プレイリスト追加＋セッション記録 ===== */
-    .right-bottom{
-      display:flex;flex-direction:column;gap:.7rem;
-      padding:1rem;
-      flex:1;
-      overflow:hidden;
-      min-height:0;
-    }
-    .right-bottom .log-section{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
+    /* 右カラム下部 */
+    .right-bottom{display:flex;flex-direction:column;gap:.7rem;padding:1rem;flex:1;overflow:hidden;min-height:0}
   </style>
   <script src="https://www.youtube.com/iframe_api"></script>
 </head>
@@ -200,7 +178,7 @@
 
 <div class="app">
 
-  <!-- ===== 左カラム: タイマー ===== -->
+  <!-- ===== 左: タイマー ===== -->
   <div class="col-left">
     <div>
       <div class="total-label">今日の学習時間</div>
@@ -212,7 +190,6 @@
       <button class="tab" id="tabFree" onclick="setMode('free')">フリー</button>
     </div>
 
-    <!-- ポモドーロ -->
     <div id="pomoMode" class="timer-card">
       <div class="timer-info-pane">
         <div class="timer-phase" id="pomoPhaseLabel">作業セッション</div>
@@ -236,7 +213,6 @@
       </div>
     </div>
 
-    <!-- フリー -->
     <div id="freeMode" class="timer-card" style="display:none">
       <div class="timer-info-pane">
         <div class="timer-phase">集中タイマー</div>
@@ -259,7 +235,6 @@
       </div>
     </div>
 
-    <!-- ポモドーロ設定 -->
     <div id="pomoSettingsLeft" class="content-box">
       <div class="section-title" style="border:none;margin-bottom:.3rem">タイマー設定</div>
       <div class="pomo-settings-dial-wrap">
@@ -287,11 +262,9 @@
     </div>
   </div>
 
-  <!-- ===== 中央カラム: タスク ===== -->
+  <!-- ===== 中央: タスク ===== -->
   <div class="col-mid">
-    <div>
-      <div class="total-label" style="margin-bottom:.4rem">タスク / やることリスト</div>
-    </div>
+    <div class="total-label" style="padding-bottom:.4rem;border-bottom:1px solid var(--border)">タスク / やることリスト</div>
 
     <div class="task-container">
       <div class="task-list" id="taskList">
@@ -303,8 +276,7 @@
       </div>
     </div>
 
-    <!-- セッション記録（中央下） -->
-    <div class="content-box" style="flex-shrink:0;max-height:140px">
+    <div class="content-box" style="flex-shrink:0;max-height:150px">
       <div class="section-title" style="border:none">セッション記録</div>
       <div class="log-list" id="logList">
         <div style="font-size:11px;color:var(--muted)">まだ記録がありません</div>
@@ -312,10 +284,8 @@
     </div>
   </div>
 
-  <!-- ===== 右カラム: YouTube ===== -->
+  <!-- ===== 右: YouTube ===== -->
   <div class="col-right">
-
-    <!-- 動画エリア -->
     <div class="yt-section">
       <div class="yt-header">
         <div class="section-title" style="border:none;margin:0;padding:0">BGM / 作業音楽</div>
@@ -340,22 +310,19 @@
       </div>
     </div>
 
-    <!-- プレイリスト追加＋記録 -->
     <div class="right-bottom">
-      <div>
-        <div class="section-title">カスタムお気に入り</div>
-        <div class="playlist-list" id="customList">
-          <div style="font-size:11px;color:var(--muted)">URLを追加してください</div>
-        </div>
-        <div class="input-row">
-          <input type="text" id="urlInput" placeholder="YouTube 動画 / 再生リストのURL"/>
-          <button onclick="addCustom()">追加</button>
-        </div>
+      <div class="section-title">カスタムお気に入り</div>
+      <div class="playlist-list" id="customList">
+        <div style="font-size:11px;color:var(--muted)">URLを追加してください</div>
+      </div>
+      <div class="input-row">
+        <input type="text" id="urlInput" placeholder="YouTube 動画 / 再生リストのURL"/>
+        <button onclick="addCustom()">追加</button>
       </div>
     </div>
+  </div>
 
-  </div><!-- /col-right -->
-</div><!-- /app -->
+</div>
 
 <script>
 /* ===== State ===== */
@@ -371,7 +338,7 @@ let workSec=25*60,shortSec=5*60,longSec=15*60,totalSets=4;
 let totalStudySec=0,totalInterval=null;
 let logs=[];
 
-/* ===== Dial init ===== */
+/* ===== Dial ===== */
 function initDialOptions(){
   const w=document.getElementById('workMin'),s=document.getElementById('shortMin'),l=document.getElementById('longMin');
   w.innerHTML=s.innerHTML=l.innerHTML='';
@@ -435,16 +402,23 @@ function playPlaylist(idx){
   clearInterval(titleCheckInterval);
   if(player){try{player.destroy()}catch(e){}player=null;}
   container.innerHTML='<div id="ytPlayer"></div>';
-  let pv={autoplay:1,playsinline:1},vid=undefined;
+
+  let pv={
+    autoplay:1,
+    playsinline:1,
+    rel:0,           /* 関連動画を同チャンネルに限定 */
+    modestbranding:1 /* YouTubeロゴを最小化 */
+  };
+  let vid=undefined;
   if(media.type==='playlist'){pv.listType='playlist';pv.list=media.id;if(media.videoId)vid=media.videoId;}
   else{vid=media.id;}
+
   const cfg={width:'100%',height:'100%',playerVars:pv,events:{
     onReady:e=>{e.target.playVideo();startTitleMonitor();ensurePiPAllowed();},
     onStateChange:()=>updateCurrentVideoTitle(),
     onError:e=>{
       const codes={2:'不正なID',5:'HTML5エラー',100:'非公開/削除済み',101:'埋め込み禁止',150:'埋め込み禁止'};
-      const msg=codes[e.data]||`エラー(${e.data})`;
-      document.getElementById('nowPlayingTitle').textContent='⚠️ '+msg;
+      document.getElementById('nowPlayingTitle').textContent='⚠️ '+(codes[e.data]||`エラー(${e.data})`);
     }
   }};
   if(vid)cfg.videoId=vid;
@@ -452,38 +426,65 @@ function playPlaylist(idx){
   renderCustom();
 }
 
-async function fetchVideoTitle(id){
-  try{const r=await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`);if(!r.ok)return null;const d=await r.json();return d.title||null;}catch{return null;}
-}
-async function fetchPlaylistTitle(id){
-  try{const r=await fetch(`https://noembed.com/embed?url=https://www.youtube.com/playlist?list=${id}`);if(!r.ok)return null;const d=await r.json();return(d.title&&!d.error)?d.title:null;}catch{return null;}
+/* ===== タイトル取得（修正版） =====
+   動画: youtube.com/oembed → 確実に取れる
+   再生リスト: youtube.com/oembed?url=playlist → 先頭動画のタイトルを返すので代替として使用
+   noembed.comは不安定なため廃止
+*/
+async function fetchTitleByUrl(url){
+  try{
+    const r=await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`);
+    if(!r.ok)return null;
+    const d=await r.json();
+    return d.title||null;
+  }catch{return null;}
 }
 
+/* プレイヤーAPIから現在再生中タイトルを取得してUIに反映 */
 function updateCurrentVideoTitle(){
-  if(player&&typeof player.getVideoData==='function'){
-    const d=player.getVideoData();
-    if(d&&d.title){
-      document.getElementById('nowPlayingTitle').textContent=d.title;
-      if(currentPlaying!==null&&customPlaylists[currentPlaying]){
-        const e=customPlaylists[currentPlaying];
-        const m=parseYouTubeUrl(e.url);
-        if(m&&m.type==='video'&&e.name.startsWith('お気に入り')){
-          e.name=d.title;localStorage.setItem('study_space_custom_playlists',JSON.stringify(customPlaylists));
-          const el=document.getElementById(`playlist-name-${currentPlaying}`);if(el)el.textContent=d.title;
-        }
-      }
+  if(!player||typeof player.getVideoData!=='function')return;
+  const d=player.getVideoData();
+  if(!d||!d.title)return;
+
+  /* now-playingバーを更新 */
+  document.getElementById('nowPlayingTitle').textContent=d.title;
+
+  /* リストの表示名も更新（種類問わず「お気に入り」で始まる名前はすべて書き換える） */
+  if(currentPlaying!==null&&customPlaylists[currentPlaying]){
+    const entry=customPlaylists[currentPlaying];
+    if(entry.name.startsWith('お気に入り')){
+      entry.name=d.title;
+      localStorage.setItem('study_space_custom_playlists',JSON.stringify(customPlaylists));
+      const el=document.getElementById(`playlist-name-${currentPlaying}`);
+      if(el)el.textContent=d.title;
     }
   }
 }
-function startTitleMonitor(){clearInterval(titleCheckInterval);titleCheckInterval=setInterval(updateCurrentVideoTitle,1500);}
+function startTitleMonitor(){
+  clearInterval(titleCheckInterval);
+  /* 最初は即時取得、その後1.5秒ごとに監視 */
+  updateCurrentVideoTitle();
+  titleCheckInterval=setInterval(updateCurrentVideoTitle,1500);
+}
 
+/* URL追加時にoEmbedでタイトルを非同期取得 */
 async function resolveTitle(idx){
-  const e=customPlaylists[idx];if(!e||!e.name.startsWith('お気に入り'))return;
-  const m=parseYouTubeUrl(e.url);if(!m)return;
-  let title=m.type==='video'?await fetchVideoTitle(m.id):await fetchPlaylistTitle(m.id);
+  const e=customPlaylists[idx];
+  if(!e||!e.name.startsWith('お気に入り'))return;
+  const m=parseYouTubeUrl(e.url);
+  if(!m)return;
+
+  /* 動画も再生リストも同じoEmbed URLで取得 */
+  const targetUrl=m.type==='playlist'
+    ?`https://www.youtube.com/playlist?list=${m.id}`
+    :`https://www.youtube.com/watch?v=${m.id}`;
+
+  const title=await fetchTitleByUrl(targetUrl);
   if(title&&customPlaylists[idx]){
-    customPlaylists[idx].name=title;localStorage.setItem('study_space_custom_playlists',JSON.stringify(customPlaylists));
-    const el=document.getElementById(`playlist-name-${idx}`);if(el)el.textContent=title;
+    customPlaylists[idx].name=title;
+    localStorage.setItem('study_space_custom_playlists',JSON.stringify(customPlaylists));
+    const el=document.getElementById(`playlist-name-${idx}`);
+    if(el)el.textContent=title;
   }
 }
 
@@ -491,13 +492,15 @@ function addCustom(){
   const v=document.getElementById('urlInput').value.trim();
   if(!v)return;
   if(!v.includes('youtube.com')&&!v.includes('youtu.be')){alert('YouTubeのURLを入力してください');return}
-  const m=parseYouTubeUrl(v);if(!m){alert('有効なIDが見つかりません');return}
+  const m=parseYouTubeUrl(v);
+  if(!m){alert('有効なIDが見つかりません');return}
   const isLive=v.includes('/live/');
   const label=m.type==='playlist'?'プレイリスト':(isLive?'ライブ':'動画');
   customPlaylists.push({url:v,name:`お気に入り${label} `+(customPlaylists.length+1)});
   localStorage.setItem('study_space_custom_playlists',JSON.stringify(customPlaylists));
   document.getElementById('urlInput').value='';
-  renderCustom();resolveTitle(customPlaylists.length-1);
+  renderCustom();
+  resolveTitle(customPlaylists.length-1);
 }
 
 function deleteCustom(idx){
@@ -508,7 +511,8 @@ function deleteCustom(idx){
     document.getElementById('nowPlayingTitle').textContent='動画が再生されていません';
     currentPlaying=null;
   }else if(currentPlaying>idx)currentPlaying--;
-  customPlaylists.splice(idx,1);localStorage.setItem('study_space_custom_playlists',JSON.stringify(customPlaylists));
+  customPlaylists.splice(idx,1);
+  localStorage.setItem('study_space_custom_playlists',JSON.stringify(customPlaylists));
   renderCustom();
 }
 
@@ -525,7 +529,8 @@ function ensurePiPAllowed(){
   return true;
 }
 function togglePiP(){
-  const ok=ensurePiPAllowed();const btn=document.getElementById('pipBtn');
+  const ok=ensurePiPAllowed();
+  const btn=document.getElementById('pipBtn');
   if(!ok){alert('先に動画を選択して再生してください');return}
   btn.classList.toggle('active');
   btn.title=btn.classList.contains('active')?'PiP許可済み（動画右下メニューまたはiPadスワイプで起動）':'ピクチャ・イン・ピクチャ';
@@ -543,10 +548,9 @@ function setupMediaSession(title){
 }
 function setMediaSessionState(p){if(!('mediaSession' in navigator))return;navigator.mediaSession.playbackState=p?'playing':'paused';}
 
-/* ===== Timers ===== */
+/* ===== Timer ===== */
 function fmt(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
 function fmtTotal(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),ss=s%60;return`${String(h).padStart(2,'0')}<span>h</span> ${String(m).padStart(2,'0')}<span>m</span> ${String(ss).padStart(2,'0')}<span>s</span>`}
-
 function startTotal(){if(!totalInterval)totalInterval=setInterval(()=>{totalStudySec++;document.getElementById('totalDisplay').innerHTML=fmtTotal(totalStudySec);},1000);}
 function stopTotal(){if(!freeRunning&&!pomoRunning){clearInterval(totalInterval);totalInterval=null;}}
 
@@ -602,8 +606,8 @@ function updatePomoSettings(){
 }
 function adjustSetCount(v){totalSets=Math.max(2,Math.min(8,totalSets+v));document.getElementById('setCountVal').textContent=totalSets;renderDots();}
 function renderDots(){
-  const d=document.getElementById('pomoDots');
-  d.innerHTML=Array.from({length:totalSets},(_,i)=>`<div class="dot ${i<pomoSet?'done':i===pomoSet&&pomoPhase==='work'?'current':''}"></div>`).join('');
+  document.getElementById('pomoDots').innerHTML=Array.from({length:totalSets},(_,i)=>
+    `<div class="dot ${i<pomoSet?'done':i===pomoSet&&pomoPhase==='work'?'current':''}"></div>`).join('');
 }
 function togglePomo(){
   if(!pomoRunning){
@@ -641,26 +645,19 @@ function resetPomo(){
 function skipPomo(){if(pomoRunning)togglePomo();nextPomoPhase();}
 function updatePomoUI(){
   const total=pomoPhase==='work'?workSec:pomoPhase==='short'?shortSec:longSec;
-  const pct=1-(pomoSec/total);
   document.getElementById('pomoDisplay').textContent=fmt(pomoSec);
-  document.getElementById('pomoRing').style.strokeDashoffset=502*pct;
+  document.getElementById('pomoRing').style.strokeDashoffset=502*(1-(pomoSec/total));
   document.getElementById('pomoRing').style.stroke=pomoPhase==='work'?'var(--accent)':pomoPhase==='short'?'var(--accent2)':'var(--warn)';
-  const labels={work:'作業セッション',short:'短休憩',long:'長休憩'};
-  const rlabels={work:'集中モード',short:'休憩中',long:'長期休憩'};
-  document.getElementById('pomoPhaseLabel').textContent=labels[pomoPhase];
-  document.getElementById('pomoRingLabel').textContent=rlabels[pomoPhase];
+  document.getElementById('pomoPhaseLabel').textContent={work:'作業セッション',short:'短休憩',long:'長休憩'}[pomoPhase];
+  document.getElementById('pomoRingLabel').textContent={work:'集中モード',short:'休憩中',long:'長期休憩'}[pomoPhase];
 }
 
 /* Log */
 function addLog(label,sec){
   const now=new Date();const t=now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
   logs.unshift({label,sec,t});
-  const el=document.getElementById('logList');
-  el.innerHTML=logs.slice(0,8).map(l=>`
-    <div class="log-item">
-      <span>${l.label}</span>
-      <span class="log-time">${l.t} | ${fmt(l.sec)}</span>
-    </div>`).join('');
+  document.getElementById('logList').innerHTML=logs.slice(0,8).map(l=>
+    `<div class="log-item"><span>${l.label}</span><span class="log-time">${l.t} | ${fmt(l.sec)}</span></div>`).join('');
 }
 
 /* Init */
