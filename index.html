@@ -35,8 +35,7 @@
       display:flex;
       flex-direction:column;
       gap:.9rem;
-      overflow-y:auto;
-      overflow-x:hidden;
+      overflow:hidden; /* カラム自体はスクロールしない */
     }
 
     /* 右カラム */
@@ -46,8 +45,7 @@
       display:flex;
       flex-direction:column;
       gap:.9rem;
-      overflow-y:auto;
-      overflow-x:hidden;
+      overflow:hidden; /* カラム自体はスクロールしない */
     }
 
     /* スクロールバー細め */
@@ -119,8 +117,10 @@
     .counter-value{font-family:'DM Mono',monospace;font-size:14px;color:var(--text)}
 
     /* ===== タスクリスト ===== */
-    .task-list{display:flex;flex-direction:column;gap:6px;padding-right:2px}
-    .task-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface2)}
+    /* content-boxをflexで高さ固定し、リストだけスクロール・入力欄は常に表示 */
+    .task-box{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+    .task-list{display:flex;flex-direction:column;gap:6px;padding-right:2px;overflow-y:auto;flex:1;min-height:0}
+    .task-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);flex-shrink:0}
     .task-checkbox{background:transparent;border:1px solid var(--muted);color:transparent;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:10px;transition:all .2s;flex-shrink:0}
     .task-item.completed .task-checkbox{background:var(--success);border-color:var(--success);color:#fff}
     .task-text{font-size:12px;flex:1;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -145,8 +145,9 @@
     .now-playing-title{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;color:var(--text)}
 
     /* プレイリスト */
-    .playlist-list{display:flex;flex-direction:column;gap:6px}
-    .playlist-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);cursor:pointer;transition:all .2s}
+    .playlist-box{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+    .playlist-list{display:flex;flex-direction:column;gap:6px;overflow-y:auto;flex:1;min-height:0;padding-right:2px}
+    .playlist-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);cursor:pointer;transition:all .2s;flex-shrink:0}
     .playlist-item:hover{border-color:var(--accent);background:rgba(124,106,255,.08)}
     .playlist-item.playing{border-color:var(--accent2);background:rgba(78,205,196,.08)}
     .playlist-name{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
@@ -261,12 +262,14 @@
     </div>
 
     <!-- タスクリスト -->
-    <div class="content-box">
+    <div class="content-box" style="flex:1;min-height:0;">
       <div class="section-title">タスク / やることリスト</div>
-      <div class="task-list" id="taskList">
-        <div style="font-size:12px;color:var(--muted)">タスクがありません</div>
+      <div class="task-box">
+        <div class="task-list" id="taskList">
+          <div style="font-size:12px;color:var(--muted)">タスクがありません</div>
+        </div>
       </div>
-      <div class="input-row">
+      <div class="input-row" style="flex-shrink:0;">
         <input type="text" id="taskInput" placeholder="新しいタスクを入力..." onkeypress="if(event.key==='Enter')addTask()"/>
         <button onclick="addTask()">追加</button>
       </div>
@@ -303,21 +306,23 @@
     </div>
 
     <!-- カスタムお気に入り -->
-    <div class="content-box">
-      <div class="section-title" style="border:none">カスタムお気に入り</div>
-      <div class="playlist-list" id="customList">
-        <div style="font-size:11px;color:var(--muted)">URLを追加してください</div>
+    <div class="content-box" style="flex:1;min-height:0;">
+      <div class="section-title" style="border:none;flex-shrink:0;">カスタムお気に入り</div>
+      <div class="playlist-box">
+        <div class="playlist-list" id="customList">
+          <div style="font-size:11px;color:var(--muted)">URLを追加してください</div>
+        </div>
       </div>
-      <div class="input-row">
+      <div class="input-row" style="flex-shrink:0;">
         <input type="text" id="urlInput" placeholder="YouTube 動画 / 再生リストのURL"/>
         <button onclick="addCustom()">追加</button>
       </div>
     </div>
 
     <!-- セッション記録 -->
-    <div class="content-box">
+    <div class="content-box" style="flex-shrink:0;max-height:160px;">
       <div class="section-title" style="border:none">セッション記録</div>
-      <div class="log-list" id="logList">
+      <div class="log-list" id="logList" style="overflow-y:auto;">
         <div style="font-size:11px;color:var(--muted)">まだ記録がありません</div>
       </div>
     </div>
@@ -633,6 +638,21 @@ function addLog(label,sec){
   document.getElementById('logList').innerHTML=logs.slice(0,8).map(l=>
     `<div class="log-item"><span>${l.label}</span><span class="log-time">${l.t} | ${fmt(l.sec)}</span></div>`).join('');
 }
+
+/* ===== Wake Lock（画面消灯防止） ===== */
+let wakeLock=null;
+async function requestWakeLock(){
+  if(!('wakeLock' in navigator))return;
+  try{
+    wakeLock=await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release',()=>{wakeLock=null;});
+  }catch(e){}
+}
+/* 非表示から戻ったときに再取得 */
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible')requestWakeLock();
+});
+requestWakeLock();
 
 /* Init */
 initDialOptions();
