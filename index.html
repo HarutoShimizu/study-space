@@ -642,6 +642,22 @@ function addLog(label,sec){
     `<div class="log-item"><span>${l.label}</span><span class="log-time">${l.t} | ${fmt(l.sec)}</span></div>`).join('');
 }
 
+/* ===== visualViewport: キーボード出現時に高さを再計算 =====
+   Chromeのツールバーやキーボードで表示領域が変わっても
+   .appが正しい高さを維持するようにCSS変数を更新する */
+function updateVVH(){
+  const h = window.visualViewport
+    ? window.visualViewport.height + 'px'
+    : '100dvh';
+  document.documentElement.style.setProperty('--vvh', h);
+}
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize', updateVVH);
+  window.visualViewport.addEventListener('scroll', updateVVH);
+}
+window.addEventListener('resize', updateVVH);
+updateVVH();
+
 /* ===== Wake Lock（画面消灯防止） ===== */
 let wakeLock=null;
 async function requestWakeLock(){
@@ -656,6 +672,16 @@ document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible')requestWakeLock();
 });
 requestWakeLock();
+
+/* ===== 入力欄フォーカス時に自動スクロール =====
+   キーボードが出て入力欄が隠れた場合に scrollIntoView で表示する */
+document.querySelectorAll('input').forEach(inp => {
+  inp.addEventListener('focus', () => {
+    setTimeout(() => {
+      inp.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 350); /* キーボードアニメーション後に実行 */
+  });
+});
 
 /* Init */
 initDialOptions();
