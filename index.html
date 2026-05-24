@@ -46,7 +46,7 @@
     .timer-card{
       background:var(--surface);border:1px solid var(--border);border-radius:14px;
       padding:.9rem 1rem;
-      display:flex;align-items:center;gap:1.2rem;
+      display:flex;align-items:center;justify-content:center;gap:1.2rem;
     }
     /* 左側：タブ縦並び */
     .mode-tabs{
@@ -62,7 +62,7 @@
     .tab:hover:not(.active){border-color:var(--accent);color:var(--accent)}
 
     /* 中央：リング */
-    .timer-info-pane{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+    .timer-info-pane{display:flex;flex-direction:column;align-items:center;flex:1;}
     .timer-phase{font-size:10px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:.35rem}
     .ring-wrap{position:relative;width:130px;height:130px}
     .ring-wrap svg{transform:rotate(-90deg);width:130px;height:130px}
@@ -77,7 +77,7 @@
     .dot.current{background:var(--warn)}
 
     /* 右側：コントロール */
-    .controls{display:flex;flex-direction:column;align-items:center;gap:8px;margin-left:auto}
+    .controls{display:flex;flex-direction:column;align-items:center;gap:8px;}
     .btn-main{width:44px;height:44px;border-radius:50%;border:none;background:var(--accent);color:#fff;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s,opacity .2s}
     .btn-main:hover{opacity:.85}
     .btn-main:active{transform:scale(.93)}
